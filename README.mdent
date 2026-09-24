@@ -1,1 +1,108 @@
-"# Web based e-chaneling System" 
+Web-Based E-Channeling System
+SLIIT — SE2030 Software Engineering — Group Project (2026-Y2-S1-MLB-B10G2-04)
+A hospital/clinic e-channeling platform built with Spring Boot (MVC) + JSP + Microsoft SQL Server,
+matching the use-case diagram, proposal report and activity diagrams already submitted for this project.
+---
+1. Tech stack
+Layer	Technology
+Backend	Spring Boot 3.2 (Spring MVC, plain JDBC via `JdbcTemplate` — no JPA/Hibernate)
+Database	Microsoft SQL Server
+Frontend	JSP + JSTL, plain CSS (no frontend framework)
+Auth	Session-based login, BCrypt password hashing (`spring-security-crypto` only — not full Spring Security)
+Build	Maven
+We used plain JDBC on purpose (instead of Hibernate/JPA) because the DB module (SQL, DDL, stored
+procedures, triggers, prepared statements, exception handling) is examinable, and this way every
+query in the code is a real SQL statement you can explain in the viva.
+---
+2. Project structure
+```
+src/main/java/com/echannel/
+ ├─ model/        one class per table (User, Doctor, Patient, Appointment, ...)
+ ├─ repository/   Repository<T, ID> generic interface + one impl per entity (raw SQL via JdbcTemplate)
+ ├─ service/      business logic, composed of repositories
+ ├─ controller/   one controller per actor (Auth, Patient, Doctor, Reception, Pharmacist, Operations, Admin)
+ ├─ config/       RoleInterceptor (session-based access control), password + MVC config
+ └─ exception/    DatabaseException (custom checked exception)
+
+src/main/webapp/WEB-INF/views/   JSP pages, one folder per role dashboard
+src/main/webapp/resources/css/   style.css (modern UI)
+db/echannel\\\_schema.sql           run this in SQL Server first
+```
+This matches the OOP write-up from the brief:
+Encapsulation — every model has private fields + public getters/setters.
+Abstraction — `Repository<T, ID>` interface hides the JDBC/SQL details from the Service layer.
+Inheritance — `DatabaseException extends Exception`.
+Polymorphism — every `XxxRepository` overrides the same `Repository<T, ID>` contract; model
+classes have overloaded no-arg / all-args constructors.
+Composition — Services have-a Repository (constructor/field injection), they don't extend it.
+Generics — `Repository<T, ID>` is reused across every entity.
+---
+3. Database setup (do this first)
+Install SQL Server (Express edition is fine) and SQL Server Management Studio (SSMS) or Azure Data Studio.
+Open `db/echannel\\\_schema.sql` in SSMS and run the whole script. It will:
+create the `EChannelDB` database
+create all tables (`users`, `branches`, `rooms`, `doctors`, `doctor\\\_schedule`, `patients`,
+`appointments`, `health\\\_records`, `prescriptions`, `feedback`, `notifications`)
+create one view (`vw\\\_daily\\\_appointments`), one stored procedure
+(`sp\\\_fulfil\\\_prescription`) and one trigger (`trg\\\_prescription\\\_fulfilled`)
+insert seed data: 1 branch, 2 rooms, and one demo login per role.
+Demo logins (all use password `Passw0rd!`)
+Username	Role
+admin	System Administrator
+drperera	Doctor (Cardiology)
+reception1	Reception Staff
+pharmacy1	Pharmacist
+opsmgr1	Operations Manager
+patient1	Patient
+---
+4. Configure the connection
+Edit `src/main/resources/application.properties`:
+```properties
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=EChannelDB;encrypt=true;trustServerCertificate=true
+spring.datasource.username=sa
+spring.datasource.password=YourStrong@Passw0rd
+```
+Change the username/password to match your own SQL Server login.
+---
+5. Run the project
+```bash
+mvn spring-boot:run
+```
+Then open http://localhost:8080 in your browser. You'll be redirected to `/login`.
+> If you'd rather deploy the generated WAR (`target/echannel-system.war`) to an external Tomcat, open
+> `pom.xml` and change the `spring-boot-starter-tomcat` dependency scope to `provided`.
+---
+6. What's implemented vs. the use-case diagram
+Actor	Implemented
+Patient	Register Account, Login, Search Doctors by Specialty, Book Appointment, Cancel Appointment, View Medical History, View e-Prescriptions, Submit Feedback
+Doctor	Login, Manage Availability (create/cancel sessions with conflict checking), View Patient History, Add Diagnosis Notes, Issue e-Prescription
+Reception Staff	Login, Register Walk-in Patient, View Daily Appointment List, Update Booking Status (Attended / No-show)
+Pharmacist	Login, View e-Prescription Queue, Confirm Order Fulfilment (calls a stored procedure)
+Operations Manager	Login, Monitor Room Usage, View Doctor Performance (average rating), View/Flag Feedback
+System Administrator	Login, Manage User Roles & Status, Reset Password, Configure Branch Parameters, Add/Deactivate Rooms
+Not implemented (kept out of scope to stay within a manageable university project, as allowed by the
+proposal's own "Scope and Limitations" section): billing/insurance, telemedicine, SMS/email delivery of
+OTPs, and the `<<extend>>` edge cases that are pure UI convenience (e.g. "View Feedback Response").
+Feel free to extend these once the core flow is working and understood — they follow the exact same
+Model → Repository → Service → Controller → JSP pattern used everywhere else.
+---
+7. Mapping to the Databases (IT xxxx) module outline
+LO1 (DB design / ERD) — see `db/echannel\\\_schema.sql` for the physical schema; draw the
+conceptual ERD from these tables and FKs for your Design Document.
+LO2 (Schema refinement) — the schema is already in 3NF (e.g. `doctor\\\_schedule` separated from
+`appointments`, `rooms` separated from `branches`) — good material to discuss functional
+dependencies in your report.
+LO3 (SQL) — every `XxxRepository` class is plain SQL via `PreparedStatement`/`JdbcTemplate`;
+`FeedbackRepository.averageRatingForDoctor()` uses `AVG()`; `vw\\\_daily\\\_appointments` is a multi-table
+join view.
+LO4 (DB programming) — `sp\\\_fulfil\\\_prescription` (stored procedure), `trg\\\_prescription\\\_fulfilled`
+(trigger), `vw\\\_daily\\\_appointments` (view).
+LO5 (DB connectivity) — `PrescriptionRepository.fulfil()` calls the stored procedure via
+`SimpleJdbcCall`; every other repository uses `PreparedStatement`-backed `JdbcTemplate` calls wrapped
+in try/catch that re-throws a custom `DatabaseException`.
+---
+8. Notes for your viva / individual contribution section
+Because every module (Doctor Schedule, Appointment, Health Records, Branch/Room, Prescription,
+Feedback) has its own Model + Repository + Service + a dedicated section of a Controller, it's easy to
+divide "ownership" per group member exactly as listed in your proposal report (section 6), and each
+member can explain their own file end-to-end (JSP → Controller → Service → Repository → SQL) during

@@ -50,7 +50,7 @@ public class AuthController {
             HttpSession session = request.getSession(true);
             session.setAttribute("currentUser", user);
             session.setAttribute("loggedInUser", user);
-            return "redirect:/portal";
+            return "redirect:/home";
         } catch (DatabaseException e) {
             model.addAttribute("error", "System error: " + e.getMessage());
             return "auth/login";
