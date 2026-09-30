@@ -120,9 +120,7 @@
             </c:if>
 
             <c:if test="${user.role == 'PHARMACIST'}">
-                <button class="tab-btn" data-tab="pending"><span class="icon">⏳</span> Pending Queue</button>
-                <button class="tab-btn" data-tab="dispense"><span class="icon">💊</span> Dispense Medication</button>
-                <button class="tab-btn" data-tab="inventory"><span class="icon">📦</span> Inventory</button>
+                <button class="tab-btn" data-tab="pharmacy"><span class="icon">💊</span> Pharmacy</button>
             </c:if>
 
             <c:if test="${user.role == 'RECEPTION'}">
@@ -401,45 +399,89 @@
 
             <!-- ==================== PHARMACIST SUB-UIs ==================== -->
             <c:if test="${user.role == 'PHARMACIST'}">
-                <div id="tab-pending" class="tab-content">
+                <div id="tab-pharmacy" class="tab-content">
+                    <c:if test="${param.dispensed == '1'}">
+                        <div style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.4); color:#34d399; padding:12px 16px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:18px;">✅</span>
+                            <span>Prescription fulfilled successfully and medication dispensed at the selected pharmacy.</span>
+                        </div>
+                    </c:if>
+                    <c:if test="${param.updated == '1'}">
+                        <div style="background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.4); color:#60a5fa; padding:12px 16px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:18px;">ℹ️</span>
+                            <span>Participating pharmacy assignment updated successfully.</span>
+                        </div>
+                    </c:if>
+
                     <div class="card">
-                        <div class="card-header"><h2 class="card-title">Pending e-Prescriptions Queue</h2></div>
-                        <table class="table-custom">
-                            <thead><tr><th>ID</th><th>Patient</th><th>Doctor</th><th>Medicines</th><th>Status</th><th>Action</th></tr></thead>
-                            <tbody>
-                                <c:forEach var="p" items="${pending}">
+                        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 class="card-title">Incoming Doctor e-Prescriptions</h2>
+                                <p style="font-size:13px; color:#94a3b8; margin:4px 0 0 0;">Review incoming prescriptions, assign participating pharmacies, and dispense medications.</p>
+                            </div>
+                            <span class="status-pill status-BOOKED" style="font-size:12px;">6 Participating Pharmacies</span>
+                        </div>
+
+                        <div style="overflow-x:auto;">
+                            <table class="table-custom">
+                                <thead>
                                     <tr>
-                                        <td>#${p.prescriptionId}</td>
-                                        <td><strong>${p.patientName}</strong></td>
-                                        <td>${p.doctorName}</td>
-                                        <td style="color:#fbbf24;">${p.medicines}</td>
-                                        <td><span class="status-pill status-${p.status}">${p.status}</span></td>
-                                        <td>
-                                            <form method="post" action="${pageContext.request.contextPath}/pharmacist/dispense/${p.prescriptionId}">
-                                                <button type="submit" class="btn-success-sm">Dispense Medication</button>
-                                            </form>
-                                        </td>
+                                        <th>Rx ID</th>
+                                        <th>Patient Name</th>
+                                        <th>Doctor</th>
+                                        <th>Diagnosis / Clinical Notes</th>
+                                        <th>Prescribed Medicines</th>
+                                        <th>Status</th>
+                                        <th style="min-width:300px;">Participating Pharmacy &amp; Fulfilment</th>
                                     </tr>
-                                </c:forEach>
-                                <c:if test="${empty pending}">
-                                    <tr><td colspan="6" style="text-align:center;color:#94a3b8;">No pending prescriptions in queue.</td></tr>
-                                </c:if>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div id="tab-dispense" class="tab-content">
-                    <div class="card">
-                        <div class="card-header"><h2 class="card-title">Dispense Medication Console</h2></div>
-                        <p style="color:#94a3b8;">Verify prescribed items against patient identity before dispensing.</p>
-                    </div>
-                </div>
-
-                <div id="tab-inventory" class="tab-content">
-                    <div class="card">
-                        <div class="card-header"><h2 class="card-title">Pharmacy Medicine Inventory</h2></div>
-                        <p style="color:#94a3b8;">Stock tracking &amp; inventory management console.</p>
+                                </thead>
+                                <tbody>
+                                    <c:forEach var="p" items="${pending}">
+                                        <tr>
+                                            <td><strong style="color:#60a5fa;">#${p.prescriptionId}</strong></td>
+                                            <td>
+                                                <div style="font-weight:600; color:#f1f5f9;">${p.patientName}</div>
+                                                <div style="font-size:11px; color:#94a3b8;">Patient ID: #P-${p.patientId}</div>
+                                            </td>
+                                            <td>
+                                                <div style="color:#e2e8f0;">${p.doctorName}</div>
+                                                <div style="font-size:11px; color:#94a3b8;">Attending Physician</div>
+                                            </td>
+                                            <td>
+                                                <span style="color:#cbd5e1; font-size:13px;">${p.diagnosis != null ? p.diagnosis : 'Standard Clinical Protocol'}</span>
+                                            </td>
+                                            <td>
+                                                <span style="color:#fbbf24; font-weight:500;">${p.medicines}</span>
+                                            </td>
+                                            <td>
+                                                <span class="status-pill status-${p.status}">${p.status}</span>
+                                            </td>
+                                            <td>
+                                                <form method="post" action="${pageContext.request.contextPath}/pharmacist/dispense/${p.prescriptionId}" style="display:flex; align-items:center; gap:8px;">
+                                                    <select name="pharmacyName" class="form-control-dark" style="min-width: 175px; padding: 6px 10px; font-size: 13px;" required>
+                                                        <option value="">-- Select Pharmacy --</option>
+                                                        <c:forEach var="pharmacy" items="${participatingPharmacies}">
+                                                            <option value="${pharmacy}" <c:if test="${p.pharmacyName == pharmacy}">selected</c:if>>${pharmacy}</option>
+                                                        </c:forEach>
+                                                    </select>
+                                                    <button type="submit" class="btn-success-sm" style="white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">
+                                                        <span>💊</span> Dispense
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    </c:forEach>
+                                    <c:if test="${empty pending}">
+                                        <tr>
+                                            <td colspan="7" style="text-align:center; padding:32px 16px; color:#94a3b8;">
+                                                <div style="font-size:24px; margin-bottom:8px;">💊</div>
+                                                <div>No pending e-prescriptions waiting in the fulfillment queue.</div>
+                                            </td>
+                                        </tr>
+                                    </c:if>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </c:if>
@@ -603,6 +645,9 @@
 
         function activateTab(tabId) {
             if (!tabId) return;
+            if ((tabId === 'queue' || tabId === 'pending') && !document.getElementById('tab-' + tabId) && document.getElementById('tab-pharmacy')) {
+                tabId = 'pharmacy';
+            }
             tabBtns.forEach(btn => {
                 if (btn.dataset.tab === tabId) {
                     btn.classList.add('active');
@@ -631,7 +676,10 @@
         const urlParams = new URLSearchParams(window.location.search);
         const serverActiveTab = '${activeTab}';
         const queryTab = urlParams.get('tab');
-        const initialTab = queryTab || serverActiveTab || (tabBtns.length > 0 ? tabBtns[0].dataset.tab : null);
+        let initialTab = queryTab || serverActiveTab || (tabBtns.length > 0 ? tabBtns[0].dataset.tab : null);
+        if ((initialTab === 'queue' || initialTab === 'pending') && !document.getElementById('tab-' + initialTab) && document.getElementById('tab-pharmacy')) {
+            initialTab = 'pharmacy';
+        }
         if (initialTab) {
             activateTab(initialTab);
         }

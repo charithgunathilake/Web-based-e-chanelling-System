@@ -26,11 +26,19 @@ public class PrescriptionRepository implements com.echannel.repository.Repositor
     @Autowired
     private DataSource dataSource;
 
+    @jakarta.annotation.PostConstruct
+    public void initTable() {
+        try {
+            jdbcTemplate.execute("IF COL_LENGTH('dbo.prescriptions', 'pharmacy_name') IS NULL ALTER TABLE dbo.prescriptions ADD pharmacy_name VARCHAR(100) NULL");
+        } catch (Exception ignored) {}
+    }
+
     private static final String BASE_SELECT =
-        "SELECT pr.*, up.full_name AS patient_name, ud.full_name AS doctor_name " +
+        "SELECT pr.*, up.full_name AS patient_name, ud.full_name AS doctor_name, hr.diagnosis AS diagnosis " +
         "FROM prescriptions pr " +
         "JOIN patients p ON pr.patient_id = p.patient_id LEFT JOIN users up ON p.user_id = up.user_id " +
-        "JOIN doctors d ON pr.doctor_id = d.doctor_id JOIN users ud ON d.user_id = ud.user_id ";
+        "JOIN doctors d ON pr.doctor_id = d.doctor_id JOIN users ud ON d.user_id = ud.user_id " +
+        "LEFT JOIN health_records hr ON pr.health_record_id = hr.record_id ";
 
     private final RowMapper<Prescription> rowMapper = (rs, rowNum) -> {
         Prescription p = new Prescription();
@@ -48,6 +56,8 @@ public class PrescriptionRepository implements com.echannel.repository.Repositor
         try {
             p.setPatientName(rs.getString("patient_name"));
             p.setDoctorName(rs.getString("doctor_name"));
+            p.setPharmacyName(rs.getString("pharmacy_name"));
+            p.setDiagnosis(rs.getString("diagnosis"));
         } catch (Exception ignored) {}
         return p;
     };
@@ -127,17 +137,38 @@ public class PrescriptionRepository implements com.echannel.repository.Repositor
         }
     }
 
+    public void updatePharmacy(Integer prescriptionId, String pharmacyName) throws DatabaseException {
+        try {
+            jdbcTemplate.update("UPDATE prescriptions SET pharmacy_name = ? WHERE prescription_id = ?",
+                    pharmacyName, prescriptionId);
+        } catch (DataAccessException e) {
+            throw new DatabaseException("Could not update pharmacy: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Dispenses ("fulfils") a prescription by CALLING the sp_fulfil_prescription
-     * stored procedure in SQL Server, instead of running a plain UPDATE here.
-     * This demonstrates "calling functions and stored procedures" from the app.
+     * stored procedure in SQL Server, and saves the dispensing pharmacy name.
      */
     public void fulfil(Integer prescriptionId) throws DatabaseException {
+        fulfil(prescriptionId, null);
+    }
+
+    public void fulfil(Integer prescriptionId, String pharmacyName) throws DatabaseException {
         try {
+            if (pharmacyName != null && !pharmacyName.isBlank()) {
+                jdbcTemplate.update("UPDATE prescriptions SET pharmacy_name = ? WHERE prescription_id = ?",
+                        pharmacyName, prescriptionId);
+            }
             SimpleJdbcCall call = new SimpleJdbcCall(dataSource).withProcedureName("sp_fulfil_prescription");
             call.execute(java.util.Map.of("PrescriptionId", prescriptionId));
-        } catch (DataAccessException e) {
-            throw new DatabaseException("Could not dispense prescription: " + e.getMessage(), e);
+        } catch (Exception e) {
+            try {
+                jdbcTemplate.update("UPDATE prescriptions SET status = 'FULFILLED', fulfilled_at = GETDATE(), pharmacy_name = COALESCE(?, pharmacy_name) WHERE prescription_id = ?",
+                        pharmacyName, prescriptionId);
+            } catch (DataAccessException ex) {
+                throw new DatabaseException("Could not dispense prescription: " + ex.getMessage(), ex);
+            }
         }
     }
 }

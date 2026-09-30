@@ -29,7 +29,7 @@
     </c:if>
 
     <c:if test="${u.role == 'PHARMACIST'}">
-        <a class="nav-link ${currentPage == 'dashboard' ? 'active' : ''}" href="${pageContext.request.contextPath}/pharmacist/dashboard"><span class="icon">&#128138;</span> Prescription Queue</a>
+        <a class="nav-link ${currentPage == 'pharmacy' ? 'active' : ''}" href="${pageContext.request.contextPath}/portal?tab=pharmacy"><span class="icon">&#128138;</span> Pharmacy</a>
     </c:if>
 
     <c:if test="${u.role == 'OPERATIONS_MANAGER'}">

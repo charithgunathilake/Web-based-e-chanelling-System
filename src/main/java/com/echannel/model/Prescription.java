@@ -55,4 +55,12 @@ public class Prescription {
 
     public LocalDateTime getFulfilledAt() { return fulfilledAt; }
     public void setFulfilledAt(LocalDateTime fulfilledAt) { this.fulfilledAt = fulfilledAt; }
+
+    private String pharmacyName;
+    public String getPharmacyName() { return pharmacyName; }
+    public void setPharmacyName(String pharmacyName) { this.pharmacyName = pharmacyName; }
+
+    private String diagnosis;
+    public String getDiagnosis() { return diagnosis; }
+    public void setDiagnosis(String diagnosis) { this.diagnosis = diagnosis; }
 }

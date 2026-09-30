@@ -95,6 +95,7 @@ public class PortalController {
 
     private void populatePharmacistData(Model model) throws DatabaseException {
         model.addAttribute("pending", prescriptionService.pendingQueue());
+        model.addAttribute("participatingPharmacies", prescriptionService.getParticipatingPharmacies());
     }
 
     private void populateReceptionData(String date, Model model) throws DatabaseException {

@@ -275,7 +275,7 @@
                 </a>
             </c:when>
             <c:when test="${u.role == 'PHARMACIST'}">
-                <a href="${pageContext.request.contextPath}/pharmacist/dashboard" class="btn btn-primary" style="padding: 12px 24px;">
+                <a href="${pageContext.request.contextPath}/portal?tab=pharmacy" class="btn btn-primary" style="padding: 12px 24px;">
                     Open Pharmacy Queue &rarr;
                 </a>
             </c:when>

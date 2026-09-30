@@ -26,6 +26,32 @@ public class UserRepository implements com.echannel.repository.Repository<User, 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @jakarta.annotation.PostConstruct
+    public void seedDefaultUsers() {
+        try {
+            String hash = "$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2";
+            String[] users = {
+                "admin,System Administrator,admin@echannel.lk,0770000000,ADMIN",
+                "drperera,Dr. Nimal Perera,perera@echannel.lk,0770000001,DOCTOR",
+                "reception1,Reception Staff 1,reception@echannel.lk,0770000002,RECEPTION",
+                "pharmacy1,Pharmacist 1,pharmacy@echannel.lk,0770000003,PHARMACIST",
+                "opsmgr1,Operations Manager 1,ops@echannel.lk,0770000004,OPERATIONS_MANAGER",
+                "patient1,Kasun Silva,kasun@example.com,0770000005,PATIENT"
+            };
+            for (String uStr : users) {
+                String[] parts = uStr.split(",");
+                String username = parts[0];
+                Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE username = ?", Integer.class, username);
+                if (count == null || count == 0) {
+                    jdbcTemplate.update("INSERT INTO users (username, password, full_name, email, phone, role, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)",
+                            username, hash, parts[1], parts[2], parts[3], parts[4]);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Could not seed default users: " + e.getMessage());
+        }
+    }
+
     private final RowMapper<User> rowMapper = (rs, rowNum) -> {
         User u = new User();
         u.setUserId(rs.getInt("user_id"));

@@ -14,14 +14,22 @@ public class PharmacistController {
     @Autowired private PrescriptionService prescriptionService;
 
     /** Use Case 5: View e-Prescription queue + Confirm Order Fulfilment (dispense). */
-    @GetMapping("/dashboard")
+    @GetMapping({"/dashboard", "/queue"})
     public String dashboard() {
-        return "redirect:/portal";
+        return "redirect:/portal?tab=pharmacy";
     }
 
     @PostMapping("/dispense/{prescriptionId}")
-    public String dispense(@PathVariable Integer prescriptionId) throws DatabaseException {
-        prescriptionService.dispense(prescriptionId);
-        return "redirect:/pharmacist/dashboard?dispensed=1";
+    public String dispense(@PathVariable Integer prescriptionId,
+                           @RequestParam(required = false) String pharmacyName) throws DatabaseException {
+        prescriptionService.dispense(prescriptionId, pharmacyName);
+        return "redirect:/portal?tab=pharmacy&dispensed=1";
+    }
+
+    @PostMapping("/assign-pharmacy")
+    public String assignPharmacy(@RequestParam Integer prescriptionId,
+                                 @RequestParam String pharmacyName) throws DatabaseException {
+        prescriptionService.updatePharmacy(prescriptionId, pharmacyName);
+        return "redirect:/portal?tab=pharmacy&updated=1";
     }
 }
