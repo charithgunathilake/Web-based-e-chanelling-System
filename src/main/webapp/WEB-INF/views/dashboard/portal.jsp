@@ -80,8 +80,10 @@
 
         .btn-glow { background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
         .btn-glow:hover { opacity: 0.95; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.4); }
-        .btn-danger-sm { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.3); color: #f87171; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
-        .btn-danger-sm:hover { background: rgba(239,68,68,0.4); }
+        .btn-warning-sm { background: #ffc107; border: 1px solid #d39e00; color: #111827; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; text-decoration: none; }
+        .btn-warning-sm:hover { background: #e0a800; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(255,193,7,0.4); }
+        .btn-danger-sm { background: #dc3545; border: 1px solid #bd2130; color: #ffffff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; text-decoration: none; }
+        .btn-danger-sm:hover { background: #bd2130; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(220,53,69,0.4); }
         .btn-success-sm { background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
         .btn-success-sm:hover { background: rgba(16,185,129,0.4); }
     </style>
@@ -311,10 +313,32 @@
 
                 <!-- 2. Issue Prescriptions -->
                 <div id="tab-prescribe" class="tab-content">
-                    <div class="card">
-                        <div class="card-header"><h2 class="card-title">Issue e-Prescription &amp; Consultation Record</h2></div>
+                    <c:if test="${param.prescribed == '1'}">
+                        <div style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.4); color:#34d399; padding:12px 16px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:18px;">✅</span>
+                            <span>Prescription issued and consultation record saved successfully.</span>
+                        </div>
+                    </c:if>
+                    <c:if test="${param.updated == '1'}">
+                        <div style="background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.4); color:#60a5fa; padding:12px 16px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:18px;">✅</span>
+                            <span>Prescription successfully updated.</span>
+                        </div>
+                    </c:if>
+                    <c:if test="${param.deleted == '1'}">
+                        <div style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#f87171; padding:12px 16px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:18px;">🗑️</span>
+                            <span>Prescription successfully deleted.</span>
+                        </div>
+                    </c:if>
+
+                    <div class="card" id="prescriptionCard">
+                        <div class="card-header"><h2 class="card-title" id="prescriptionFormTitle">Issue e-Prescription &amp; Consultation Record</h2></div>
                         
                         <form method="post" action="${pageContext.request.contextPath}/doctor/prescription" id="prescriptionForm">
+                            <input type="hidden" name="prescriptionId" id="editPrescriptionId" value="">
+                            <input type="hidden" name="appointmentId" id="prescriptionAppointmentId" value="">
+
                             <div class="form-grid" style="margin-bottom: 20px;">
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label style="color:#60a5fa;font-weight:700;">Select Patient from Active Queue</label>
@@ -346,8 +370,6 @@
                                 </div>
                             </div>
 
-                            <input type="hidden" name="appointmentId" id="prescriptionAppointmentId" value="">
-
                             <div class="form-grid">
                                 <div class="form-group" style="grid-column: span 2;">
                                     <label>Clinical Diagnosis</label>
@@ -367,10 +389,83 @@
                                 </div>
                             </div>
 
-                            <div style="margin-top: 18px; display: flex; gap: 12px; align-items: center;">
-                                <button type="submit" class="btn-glow" style="padding: 12px 28px; font-size:14px;">Save &amp; Dispense</button>
+                            <div style="margin-top: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                <button type="submit" id="prescribeSubmitBtn" class="btn-glow" style="padding: 12px 28px; font-size:14px;">Save &amp; Dispense</button>
+                                <button type="button" id="prescribeCancelEditBtn" onclick="cancelPrescriptionEdit()" class="btn-danger-sm" style="display:none; padding: 11px 20px; font-size:13px; background: rgba(148,163,184,0.2); border-color: rgba(148,163,184,0.4); color: #cbd5e1;">Cancel Edit</button>
                             </div>
                         </form>
+
+                        <!-- Previously Issued Prescriptions Table / History View -->
+                        <div style="margin-top: 36px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                                <div>
+                                    <h3 class="card-title" style="font-size:16px; margin:0;">Previously Issued Prescriptions</h3>
+                                    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">Manage, edit, or delete previously prescribed consultation records</div>
+                                </div>
+                                <span class="status-pill status-BOOKED" style="font-size:12px;">Issued Records</span>
+                            </div>
+
+                            <div style="overflow-x:auto;">
+                                <table class="table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Rx ID</th>
+                                            <th>Patient Name</th>
+                                            <th>Clinical Diagnosis</th>
+                                            <th>Prescribed Medicines</th>
+                                            <th>Status</th>
+                                            <th style="min-width:180px; text-align:center;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <c:forEach var="pr" items="${doctorPrescriptions}">
+                                            <tr>
+                                                <td><strong style="color:#60a5fa;">#${pr.prescriptionId}</strong></td>
+                                                <td>
+                                                    <div style="font-weight:600; color:#f1f5f9;">${pr.patientName}</div>
+                                                    <div style="font-size:11px; color:#94a3b8;">Patient ID: #P-${pr.patientId}</div>
+                                                </td>
+                                                <td>
+                                                    <span style="color:#cbd5e1; font-size:13px;">${pr.diagnosis != null ? pr.diagnosis : 'Standard Clinical Protocol'}</span>
+                                                </td>
+                                                <td>
+                                                    <span style="color:#fbbf24; font-size:13px;">${pr.medicines}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="status-pill status-${pr.status}">${pr.status}</span>
+                                                </td>
+                                                <td style="text-align:center;">
+                                                    <div style="display:inline-flex; gap:8px; align-items:center; justify-content:center;">
+                                                        <!-- Yellow Edit Button -->
+                                                        <button type="button" class="btn-warning-sm" 
+                                                                onclick="editPrescription('${pr.prescriptionId}', '${pr.patientId}', '${pr.patientName}', '${pr.diagnosis}', '${pr.medicines}')"
+                                                                title="Edit Prescription">
+                                                            <span>✏️</span> Edit
+                                                        </button>
+
+                                                        <!-- Red Delete Button -->
+                                                        <form method="post" action="${pageContext.request.contextPath}/doctor/prescription/delete/${pr.prescriptionId}" style="display:inline; margin:0;">
+                                                            <button type="submit" class="btn-danger-sm" 
+                                                                    onclick="return confirm('Are you sure you want to delete this prescription?');"
+                                                                    title="Delete Prescription">
+                                                                <span>🗑️</span> Delete
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </c:forEach>
+                                        <c:if test="${empty doctorPrescriptions}">
+                                            <tr>
+                                                <td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">
+                                                    No prescriptions recorded yet.
+                                                </td>
+                                            </tr>
+                                        </c:if>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -637,6 +732,69 @@
         statusSpan.className = 'status-pill status-' + st;
 
         document.getElementById('prescriptionAppointmentId').value = selectedOpt.dataset.appointment || '';
+    }
+
+    function editPrescription(rxId, patientId, patientName, diagnosis, medicines) {
+        const form = document.getElementById('prescriptionForm');
+        if (!form) return;
+        form.action = '${pageContext.request.contextPath}/doctor/prescription/edit';
+        document.getElementById('editPrescriptionId').value = rxId;
+        const titleEl = document.getElementById('prescriptionFormTitle');
+        if (titleEl) titleEl.innerText = 'Edit e-Prescription (Rx #' + rxId + ')';
+        const submitBtn = document.getElementById('prescribeSubmitBtn');
+        if (submitBtn) submitBtn.innerText = 'Update Prescription';
+        const cancelBtn = document.getElementById('prescribeCancelEditBtn');
+        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+        
+        const selector = document.getElementById('patientSelector');
+        if (selector) {
+            let found = false;
+            for (let i = 0; i < selector.options.length; i++) {
+                if (selector.options[i].value == patientId) {
+                    selector.selectedIndex = i;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && patientId) {
+                const opt = new Option((patientName || 'Patient') + ' (#P-' + patientId + ')', patientId, true, true);
+                selector.add(opt);
+            }
+            onPrescribePatientChange(patientId);
+        }
+
+        const diagEl = document.getElementById('prescribeDiagnosis');
+        if (diagEl) diagEl.value = (diagnosis && diagnosis !== 'null') ? diagnosis : '';
+        const medEl = document.getElementById('prescribeMedicines');
+        if (medEl) medEl.value = (medicines && medicines !== 'null') ? medicines : '';
+        const dosEl = document.getElementById('prescribeDosage');
+        if (dosEl) dosEl.value = '';
+        const instEl = document.getElementById('prescribeInstructions');
+        if (instEl) instEl.value = '';
+
+        const card = document.getElementById('prescriptionCard');
+        if (card) card.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelPrescriptionEdit() {
+        const form = document.getElementById('prescriptionForm');
+        if (!form) return;
+        form.action = '${pageContext.request.contextPath}/doctor/prescription';
+        document.getElementById('editPrescriptionId').value = '';
+        const titleEl = document.getElementById('prescriptionFormTitle');
+        if (titleEl) titleEl.innerText = 'Issue e-Prescription & Consultation Record';
+        const submitBtn = document.getElementById('prescribeSubmitBtn');
+        if (submitBtn) submitBtn.innerText = 'Save & Dispense';
+        const cancelBtn = document.getElementById('prescribeCancelEditBtn');
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        const diagEl = document.getElementById('prescribeDiagnosis');
+        if (diagEl) diagEl.value = '';
+        const medEl = document.getElementById('prescribeMedicines');
+        if (medEl) medEl.value = '';
+        const dosEl = document.getElementById('prescribeDosage');
+        if (dosEl) dosEl.value = '';
+        const instEl = document.getElementById('prescribeInstructions');
+        if (instEl) instEl.value = '';
     }
 
     document.addEventListener('DOMContentLoaded', () => {

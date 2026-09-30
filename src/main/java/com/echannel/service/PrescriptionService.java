@@ -90,4 +90,23 @@ public class PrescriptionService {
     public void dispense(Integer prescriptionId, String pharmacyName) throws DatabaseException {
         prescriptionRepository.fulfil(prescriptionId, pharmacyName);
     }
+
+    public List<Prescription> forDoctor(Integer doctorId) throws DatabaseException {
+        List<Prescription> list = null;
+        try {
+            list = prescriptionRepository.findByDoctorId(doctorId);
+        } catch (Exception ignored) {}
+        if (list != null && !list.isEmpty()) {
+            return list;
+        }
+        return pendingQueue();
+    }
+
+    public void updatePrescription(Integer prescriptionId, String medicines, String diagnosis, String instructions) throws DatabaseException {
+        prescriptionRepository.updatePrescription(prescriptionId, medicines, diagnosis, instructions);
+    }
+
+    public void deletePrescription(Integer prescriptionId) throws DatabaseException {
+        prescriptionRepository.delete(prescriptionId);
+    }
 }

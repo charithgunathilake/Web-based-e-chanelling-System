@@ -129,6 +129,29 @@ public class PrescriptionRepository implements com.echannel.repository.Repositor
         }
     }
 
+    public List<Prescription> findByDoctorId(Integer doctorId) throws DatabaseException {
+        try {
+            return jdbcTemplate.query(BASE_SELECT + " WHERE pr.doctor_id = ? ORDER BY pr.issued_at DESC",
+                    rowMapper, doctorId);
+        } catch (DataAccessException e) {
+            throw new DatabaseException("Could not read doctor's prescriptions: " + e.getMessage(), e);
+        }
+    }
+
+    public void updatePrescription(Integer prescriptionId, String medicines, String diagnosis, String instructions) throws DatabaseException {
+        try {
+            jdbcTemplate.update("UPDATE prescriptions SET medicines = ? WHERE prescription_id = ?",
+                    medicines, prescriptionId);
+            Prescription p = readById(prescriptionId);
+            if (p != null && p.getHealthRecordId() != null && (diagnosis != null || instructions != null)) {
+                jdbcTemplate.update("UPDATE health_records SET diagnosis = COALESCE(?, diagnosis), notes = COALESCE(?, notes) WHERE record_id = ?",
+                        diagnosis, instructions, p.getHealthRecordId());
+            }
+        } catch (DataAccessException e) {
+            throw new DatabaseException("Could not update prescription: " + e.getMessage(), e);
+        }
+    }
+
     public List<Prescription> findPending() throws DatabaseException {
         try {
             return jdbcTemplate.query(BASE_SELECT + " WHERE pr.status = 'PENDING' ORDER BY pr.issued_at", rowMapper);

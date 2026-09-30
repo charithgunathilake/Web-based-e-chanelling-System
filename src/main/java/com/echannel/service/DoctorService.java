@@ -68,8 +68,23 @@ public class DoctorService {
         return null; // null = success
     }
 
+    @Autowired
+    private PrescriptionService prescriptionService;
+
     /** Use Case 1, extension 3a: doctor blocks time off (leave) instead of creating a session. */
     public void cancelSession(Integer scheduleId) throws DatabaseException {
         scheduleRepository.delete(scheduleId);
+    }
+
+    public List<com.echannel.model.Prescription> prescriptionsForDoctor(Integer doctorId) throws DatabaseException {
+        return prescriptionService.forDoctor(doctorId);
+    }
+
+    public void updatePrescription(Integer prescriptionId, String medicines, String diagnosis, String instructions) throws DatabaseException {
+        prescriptionService.updatePrescription(prescriptionId, medicines, diagnosis, instructions);
+    }
+
+    public void deletePrescription(Integer prescriptionId) throws DatabaseException {
+        prescriptionService.deletePrescription(prescriptionId);
     }
 }

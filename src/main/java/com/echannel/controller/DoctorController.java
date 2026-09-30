@@ -183,4 +183,38 @@ public class DoctorController {
 
         return "redirect:/portal?tab=prescribe&prescribed=1";
     }
+
+    @PostMapping({"/prescription/edit", "/prescription/update"})
+    public String editPrescription(@RequestParam Integer prescriptionId,
+                                   @RequestParam(required = false) Integer patientId,
+                                   @RequestParam String medicines,
+                                   @RequestParam(required = false) String diagnosis,
+                                   @RequestParam(required = false) String dosage,
+                                   @RequestParam(required = false) String instructions,
+                                   HttpSession session) {
+        try {
+            StringBuilder medDetails = new StringBuilder(medicines);
+            if (dosage != null && !dosage.isBlank() && !medicines.contains("Dosage:")) {
+                medDetails.append(" | Dosage: ").append(dosage);
+            }
+            if (instructions != null && !instructions.isBlank() && !medicines.contains("Instructions:")) {
+                medDetails.append(" | Instructions: ").append(instructions);
+            }
+            doctorService.updatePrescription(prescriptionId, medDetails.toString(), diagnosis, instructions);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "redirect:/portal?tab=prescribe&updated=1";
+    }
+
+    @PostMapping("/prescription/delete/{prescriptionId}")
+    public String deletePrescription(@PathVariable Integer prescriptionId,
+                                     HttpSession session) {
+        try {
+            doctorService.deletePrescription(prescriptionId);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "redirect:/portal?tab=prescribe&deleted=1";
+    }
 }

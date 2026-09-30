@@ -89,6 +89,9 @@ public class PortalController {
             model.addAttribute("appointments", queue);
             model.addAttribute("schedule", doctorService.scheduleForDoctor(doctor.getDoctorId()));
             model.addAttribute("avgRating", feedbackService.averageRating(doctor.getDoctorId()));
+            model.addAttribute("doctorPrescriptions", prescriptionService.forDoctor(doctor.getDoctorId()));
+        } else {
+            model.addAttribute("doctorPrescriptions", prescriptionService.pendingQueue());
         }
         model.addAttribute("rooms", branchService.allRooms());
     }
