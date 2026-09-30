@@ -105,16 +105,46 @@ public class DoctorController {
     }
 
     @PostMapping("/prescription")
-    public String issuePrescription(@RequestParam Integer patientId, @RequestParam(required = false) Integer healthRecordId,
-                                     @RequestParam Integer appointmentId, @RequestParam String medicines,
+    public String issuePrescription(@RequestParam Integer patientId,
+                                     @RequestParam(required = false) Integer healthRecordId,
+                                     @RequestParam(required = false) Integer appointmentId,
+                                     @RequestParam String medicines,
+                                     @RequestParam(required = false) String diagnosis,
+                                     @RequestParam(required = false) String dosage,
+                                     @RequestParam(required = false) String instructions,
                                      HttpSession session) throws DatabaseException {
         Doctor doctor = currentDoctor(session);
+        if (doctor == null) return "redirect:/login";
+
+        if (diagnosis != null && !diagnosis.isBlank()) {
+            HealthRecord record = new HealthRecord();
+            record.setPatientId(patientId);
+            record.setDoctorId(doctor.getDoctorId());
+            record.setAppointmentId(appointmentId);
+            record.setDiagnosis(diagnosis);
+            record.setTreatment(dosage != null && !dosage.isBlank() ? dosage : "As prescribed");
+            record.setNotes(instructions);
+            healthRecordService.addRecord(record);
+            if (record.getRecordId() != null) {
+                healthRecordId = record.getRecordId();
+            }
+        }
+
+        StringBuilder medDetails = new StringBuilder(medicines);
+        if (dosage != null && !dosage.isBlank()) medDetails.append(" | Dosage: ").append(dosage);
+        if (instructions != null && !instructions.isBlank()) medDetails.append(" | Instructions: ").append(instructions);
+
         Prescription prescription = new Prescription();
         prescription.setPatientId(patientId);
         prescription.setDoctorId(doctor.getDoctorId());
         prescription.setHealthRecordId(healthRecordId);
-        prescription.setMedicines(medicines);
+        prescription.setMedicines(medDetails.toString());
         prescriptionService.issuePrescription(prescription);
-        return "redirect:/doctor/patient-history/" + appointmentId + "?prescribed=1";
+
+        if (appointmentId != null) {
+            appointmentService.updateStatus(appointmentId, "ATTENDED");
+        }
+
+        return "redirect:/portal?tab=prescribe&prescribed=1";
     }
 }

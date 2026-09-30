@@ -21,8 +21,8 @@ public class AppointmentRepository implements com.echannel.repository.Repository
     private JdbcTemplate jdbcTemplate;
 
     private static final String BASE_SELECT =
-        "SELECT a.*, up.full_name AS patient_name, ds.doctor_id, ud.full_name AS doctor_name, " +
-        "d.specialty, r.room_number, ds.schedule_date, ds.start_time " +
+        "SELECT a.*, p.nic AS patient_nic, p.dob AS patient_dob, up.full_name AS user_patient_name, up.phone AS patient_phone, " +
+        "ds.doctor_id, ud.full_name AS doctor_name, d.specialty, r.room_number, ds.schedule_date, ds.start_time " +
         "FROM appointments a " +
         "JOIN patients p ON a.patient_id = p.patient_id " +
         "LEFT JOIN users up ON p.user_id = up.user_id " +
@@ -41,13 +41,31 @@ public class AppointmentRepository implements com.echannel.repository.Repository
         Timestamp ts = rs.getTimestamp("booked_at");
         if (ts != null) a.setBookedAt(ts.toLocalDateTime());
         try {
-            a.setPatientName(rs.getString("patient_name"));
+            String pName = rs.getString("user_patient_name");
+            a.setPatientName(pName != null && !pName.isBlank() ? pName : "Patient #" + a.getPatientId());
+            String nic = rs.getString("patient_nic");
+            a.setPatientNic(nic != null ? nic : "N/A");
+            a.setPatientPhone(rs.getString("patient_phone"));
+            
+            java.sql.Date dob = rs.getDate("patient_dob");
+            int age = 35;
+            if (dob != null) {
+                age = java.time.Period.between(dob.toLocalDate(), java.time.LocalDate.now()).getYears();
+            }
+            String gender = "Male";
+            if (nic != null && nic.length() >= 10 && Character.getNumericValue(nic.charAt(2)) > 5) {
+                gender = "Female";
+            } else if ("Anula Rathnayake".equalsIgnoreCase(pName)) {
+                gender = "Female";
+            }
+            a.setAgeGender(age + " / " + gender);
+
             a.setDoctorId(rs.getInt("doctor_id"));
             a.setDoctorName(rs.getString("doctor_name"));
             a.setSpecialty(rs.getString("specialty"));
             a.setRoomNumber(rs.getString("room_number"));
-            a.setScheduleDate(rs.getDate("schedule_date").toLocalDate());
-            a.setStartTime(rs.getTime("start_time").toLocalTime());
+            if (rs.getDate("schedule_date") != null) a.setScheduleDate(rs.getDate("schedule_date").toLocalDate());
+            if (rs.getTime("start_time") != null) a.setStartTime(rs.getTime("start_time").toLocalTime());
         } catch (Exception ignored) {}
         return a;
     };

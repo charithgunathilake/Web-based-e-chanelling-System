@@ -42,6 +42,7 @@ public class PortalController {
     public String portal(@RequestParam(value = "tab", required = false) String tab,
                          @RequestParam(value = "specialty", required = false) String specialty,
                          @RequestParam(value = "date", required = false) String date,
+                         @RequestParam(value = "patientId", required = false) Integer patientId,
                          HttpSession session, Model model) throws DatabaseException {
         User user = currentUser(session);
         if (user == null) {
@@ -51,6 +52,7 @@ public class PortalController {
         // Always pass current user details to model
         model.addAttribute("currentUser", user);
         model.addAttribute("activeTab", tab);
+        model.addAttribute("selectedPatientId", patientId);
 
         String role = user.getRole();
         switch (role) {
@@ -82,7 +84,9 @@ public class PortalController {
         Doctor doctor = doctorService.findByUserId(user.getUserId());
         model.addAttribute("doctor", doctor);
         if (doctor != null) {
-            model.addAttribute("appointments", appointmentService.forDoctor(doctor.getDoctorId()));
+            java.util.List<Appointment> queue = appointmentService.ensureQueuedPatientsForDoctor(doctor.getDoctorId());
+            model.addAttribute("queuedPatients", queue);
+            model.addAttribute("appointments", queue);
             model.addAttribute("schedule", doctorService.scheduleForDoctor(doctor.getDoctorId()));
             model.addAttribute("avgRating", feedbackService.averageRating(doctor.getDoctorId()));
         }

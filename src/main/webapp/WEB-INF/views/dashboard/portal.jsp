@@ -266,25 +266,46 @@
 
             <!-- ==================== DOCTOR SUB-UIs ==================== -->
             <c:if test="${user.role == 'DOCTOR'}">
+                <c:if test="${param.prescribed == '1'}">
+                    <div class="card" style="border-color:#34d399;background:rgba(16,185,129,0.1);color:#34d399;padding:12px 20px;margin-bottom:20px;">
+                        ✔ e-Prescription &amp; Consultation Record saved successfully! Sent to Pharmacy queue.
+                    </div>
+                </c:if>
+
                 <!-- 1. Patient Queue -->
                 <div id="tab-queue" class="tab-content">
                     <div class="card">
-                        <div class="card-header"><h2 class="card-title">Today's Patient Queue</h2></div>
+                        <div class="card-header">
+                            <h2 class="card-title">Doctor's Active Patient Queue</h2>
+                            <a href="${pageContext.request.contextPath}/portal?tab=prescribe" class="btn-glow" style="padding:6px 14px;font-size:13px;text-decoration:none;">✏️ Go to Prescribe Console</a>
+                        </div>
                         <table class="table-custom">
-                            <thead><tr><th># No</th><th>Patient Name</th><th>NIC</th><th>Date &amp; Time</th><th>Status</th><th>Actions</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>Patient ID</th>
+                                    <th>Full Name</th>
+                                    <th>Age / Gender</th>
+                                    <th>Appointment Time</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                <c:forEach var="a" items="${appointments}">
+                                <c:forEach var="a" items="${queuedPatients}">
                                     <tr>
-                                        <td><strong>#${a.appointmentNumber}</strong></td>
-                                        <td>${a.patientName}</td>
-                                        <td>${a.patientNic}</td>
-                                        <td>${a.scheduleDate} (${a.startTime} - ${a.endTime})</td>
+                                        <td><strong style="color:#60a5fa;">#P-${a.patientId}</strong> <small style="color:#94a3b8;">(Token #${a.tokenNo})</small></td>
+                                        <td><strong>${a.patientName}</strong></td>
+                                        <td>${a.ageGender}</td>
+                                        <td><span style="color:#fbbf24;font-weight:600;">${a.startTime}</span></td>
                                         <td><span class="status-pill status-${a.status}">${a.status}</span></td>
                                         <td>
-                                            <a href="${pageContext.request.contextPath}/doctor/patient-history/${a.appointmentId}" class="btn-glow" style="padding:4px 10px;font-size:12px;text-decoration:none;">Examine Patient</a>
+                                            <a href="${pageContext.request.contextPath}/portal?tab=prescribe&patientId=${a.patientId}" class="btn-glow" style="padding:4px 10px;font-size:12px;text-decoration:none;">Issue Prescription &rarr;</a>
                                         </td>
                                     </tr>
                                 </c:forEach>
+                                <c:if test="${empty queuedPatients}">
+                                    <tr><td colspan="6" style="text-align:center;color:#94a3b8;">No active patients in queue.</td></tr>
+                                </c:if>
                             </tbody>
                         </table>
                     </div>
@@ -293,8 +314,65 @@
                 <!-- 2. Issue Prescriptions -->
                 <div id="tab-prescribe" class="tab-content">
                     <div class="card">
-                        <div class="card-header"><h2 class="card-title">Issue e-Prescription</h2></div>
-                        <p style="color:#94a3b8;font-size:13px;">Select a patient from the Queue tab to enter diagnosis, treatment notes, and issue digital prescriptions directly to the pharmacy.</p>
+                        <div class="card-header"><h2 class="card-title">Issue e-Prescription &amp; Consultation Record</h2></div>
+                        
+                        <form method="post" action="${pageContext.request.contextPath}/doctor/prescription" id="prescriptionForm">
+                            <div class="form-grid" style="margin-bottom: 20px;">
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label style="color:#60a5fa;font-weight:700;">Select Patient from Active Queue</label>
+                                    <select class="form-control-dark" id="patientSelector" name="patientId" required onchange="onPrescribePatientChange(this.value)">
+                                        <option value="">-- Select Active Patient --</option>
+                                        <c:forEach var="p" items="${queuedPatients}">
+                                            <option value="${p.patientId}" data-appointment="${p.appointmentId}" data-name="${p.patientName}" data-nic="${p.patientNic}" data-agegender="${p.ageGender}" data-status="${p.status}" <c:if test="${selectedPatientId == p.patientId}">selected</c:if>>
+                                                #P-${p.patientId} - ${p.patientName} (${p.ageGender}) [NIC: ${p.patientNic}] - ${p.status}
+                                            </option>
+                                        </c:forEach>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Patient Summary Card -->
+                            <div id="patientSummaryCard" style="background: rgba(15,23,42,0.7); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: none;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                    <div>
+                                        <h3 id="summaryPatientName" style="margin:0; font-size:16px; color:#f8fafc;">-</h3>
+                                        <div style="font-size:13px; color:#94a3b8; margin-top:4px;">
+                                            Patient ID: <span id="summaryPatientId" style="color:#60a5fa; font-weight:600;">-</span> &bull; 
+                                            Age / Gender: <span id="summaryAgeGender" style="color:#e2e8f0;">-</span> &bull; 
+                                            NIC: <span id="summaryNic" style="color:#e2e8f0;">-</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span id="summaryStatus" class="status-pill status-BOOKED">Waiting</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="appointmentId" id="prescriptionAppointmentId" value="">
+
+                            <div class="form-grid">
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Clinical Diagnosis</label>
+                                    <input class="form-control-dark" name="diagnosis" id="prescribeDiagnosis" placeholder="e.g., Acute Bronchitis / Hypertension" required>
+                                </div>
+                                <div class="form-group" style="grid-column: span 2;">
+                                    <label>Prescribed Medicines</label>
+                                    <textarea class="form-control-dark" name="medicines" id="prescribeMedicines" rows="3" placeholder="e.g., Amoxicillin 500mg, Paracetamol 500mg" required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Dosage &amp; Duration</label>
+                                    <input class="form-control-dark" name="dosage" id="prescribeDosage" placeholder="e.g., 1 Tablet TDS after meals for 5 Days">
+                                </div>
+                                <div class="form-group">
+                                    <label>Special Instructions / Notes</label>
+                                    <input class="form-control-dark" name="instructions" id="prescribeInstructions" placeholder="e.g., Drink warm water, rest for 3 days">
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 18px; display: flex; gap: 12px; align-items: center;">
+                                <button type="submit" class="btn-glow" style="padding: 12px 28px; font-size:14px;">Save &amp; Dispense</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
@@ -493,6 +571,32 @@
 
 <!-- Client-side SPA Dynamic Tab Switching Script -->
 <script>
+    function onPrescribePatientChange(patientId) {
+        const selector = document.getElementById('patientSelector');
+        const summaryCard = document.getElementById('patientSummaryCard');
+        if (!selector || !summaryCard) return;
+        const selectedOpt = selector.options[selector.selectedIndex];
+        
+        if (!patientId || !selectedOpt || !selectedOpt.dataset.name) {
+            summaryCard.style.display = 'none';
+            document.getElementById('prescriptionAppointmentId').value = '';
+            return;
+        }
+        
+        summaryCard.style.display = 'block';
+        document.getElementById('summaryPatientName').innerText = selectedOpt.dataset.name;
+        document.getElementById('summaryPatientId').innerText = '#P-' + patientId;
+        document.getElementById('summaryAgeGender').innerText = selectedOpt.dataset.agegender || 'N/A';
+        document.getElementById('summaryNic').innerText = selectedOpt.dataset.nic || 'N/A';
+        
+        const statusSpan = document.getElementById('summaryStatus');
+        const st = selectedOpt.dataset.status || 'Waiting';
+        statusSpan.innerText = st;
+        statusSpan.className = 'status-pill status-' + st;
+
+        document.getElementById('prescriptionAppointmentId').value = selectedOpt.dataset.appointment || '';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -530,6 +634,11 @@
         const initialTab = queryTab || serverActiveTab || (tabBtns.length > 0 ? tabBtns[0].dataset.tab : null);
         if (initialTab) {
             activateTab(initialTab);
+        }
+
+        const selector = document.getElementById('patientSelector');
+        if (selector && selector.value) {
+            onPrescribePatientChange(selector.value);
         }
     });
 </script>

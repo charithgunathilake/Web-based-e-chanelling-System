@@ -130,9 +130,9 @@ public class DoctorScheduleRepository implements com.echannel.repository.Reposit
 
     /** Checks whether the doctor or the room already has an overlapping session (use-case step 4). */
     public boolean hasConflict(Integer doctorId, Integer roomId, java.time.LocalDate date,
-                                java.time.LocalTime start, java.time.LocalTime end) throws DatabaseException {
+                               java.time.LocalTime start, java.time.LocalTime end) throws DatabaseException {
         String sql = "SELECT COUNT(*) FROM doctor_schedule WHERE schedule_date = ? AND status <> 'CANCELLED' " +
-                     "AND (doctor_id = ? OR room_id = ?) AND (start_time < ? AND end_time > ?)";
+                "AND (doctor_id = ? OR room_id = ?) AND (start_time < ? AND end_time > ?)";
         try {
             Integer count = jdbcTemplate.queryForObject(sql, Integer.class,
                     Date.valueOf(date), doctorId, roomId, Time.valueOf(end), Time.valueOf(start));

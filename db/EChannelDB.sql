@@ -253,16 +253,24 @@ INSERT INTO users (username, password, full_name, email, phone, role) VALUES
 ('reception1','$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2','Reception Staff 1',    'reception@echannel.lk','0770000002','RECEPTION'),
 ('pharmacy1','$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2','Pharmacist 1',          'pharmacy@echannel.lk', '0770000003','PHARMACIST'),
 ('opsmgr1', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Operations Manager 1', 'ops@echannel.lk',      '0770000004','OPERATIONS_MANAGER'),
-('patient1','$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Kasun Silva',           'kasun@example.com',    '0770000005','PATIENT');
+('patient1','$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Kasun Silva',           'kasun@example.com',    '0770000005','PATIENT'),
+('saman',   '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Saman Kumara',          'saman@example.com',    '0771234567','PATIENT'),
+('anula',   '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Anula Rathnayake',      'anula@example.com',    '0777654321','PATIENT');
 
 INSERT INTO doctors (user_id, specialty, branch_id) VALUES
 ((SELECT user_id FROM users WHERE username='drperera'), 'Cardiology', 1);
 
 INSERT INTO patients (user_id, nic, dob, address) VALUES
-((SELECT user_id FROM users WHERE username='patient1'), '200012345678', '2000-05-12', 'No 5, Colombo');
+((SELECT user_id FROM users WHERE username='patient1'), '200012345678', '2000-05-12', 'No 5, Colombo'),
+((SELECT user_id FROM users WHERE username='saman'),    '198512345678', '1985-04-12', 'No 12, Kandy Road, Malabe'),
+((SELECT user_id FROM users WHERE username='anula'),    '199256781234', '1992-09-25', 'No 45, Main Street, Colombo');
 
 INSERT INTO doctor_schedule (doctor_id, room_id, schedule_date, start_time, end_time, max_patients) VALUES
 (1, 2, CAST(GETDATE() AS DATE), '09:00', '12:00', 20);
+
+INSERT INTO appointments (patient_id, schedule_id, token_no, status) VALUES
+((SELECT patient_id FROM patients WHERE nic='198512345678'), 1, 1, 'Waiting'),
+((SELECT patient_id FROM patients WHERE nic='199256781234'), 1, 2, 'In Consultation');
 
 PRINT 'EChannelDB schema, view, procedure, trigger and seed data created successfully.';
 GO
@@ -272,7 +280,7 @@ UPDATE Users SET password = 'Doctor' WHERE user_id = 2;
 UPDATE Users SET password = 'Reception' WHERE user_id = 3;
 UPDATE Users SET password = 'pharmacy' WHERE user_id = 4;
 UPDATE Users SET password = 'op123' WHERE user_id = 5;
-UPDATE Users SET password = 'patient' WHERE user_id = 6;
+UPDATE Users SET password = 'patient' WHERE user_id IN (6, 7, 8);
 
 UPDATE Users SET username = 'admin' WHERE user_id = 1;
 UPDATE Users SET username = 'Doctor' WHERE user_id = 2;

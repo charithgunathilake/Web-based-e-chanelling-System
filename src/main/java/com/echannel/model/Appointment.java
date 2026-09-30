@@ -8,6 +8,9 @@ public class Appointment {
     private Integer appointmentId;
     private Integer patientId;
     private String patientName;   // joined
+    private String patientNic;    // joined
+    private String patientPhone;  // joined
+    private String ageGender;     // computed (e.g. 41 / Male)
     private Integer scheduleId;
     private Integer doctorId;     // joined
     private String doctorName;    // joined
@@ -16,7 +19,7 @@ public class Appointment {
     private LocalDate scheduleDate; // joined
     private LocalTime startTime;    // joined
     private Integer tokenNo;
-    private String status;        // BOOKED, RESCHEDULED, CANCELLED, ATTENDED, NO_SHOW
+    private String status;        // BOOKED, WAITING, IN_CONSULTATION, ATTENDED, CANCELLED, NO_SHOW
     private LocalDateTime bookedAt;
 
     public Appointment() {}
@@ -37,6 +40,15 @@ public class Appointment {
 
     public String getPatientName() { return patientName; }
     public void setPatientName(String patientName) { this.patientName = patientName; }
+
+    public String getPatientNic() { return patientNic; }
+    public void setPatientNic(String patientNic) { this.patientNic = patientNic; }
+
+    public String getPatientPhone() { return patientPhone; }
+    public void setPatientPhone(String patientPhone) { this.patientPhone = patientPhone; }
+
+    public String getAgeGender() { return ageGender; }
+    public void setAgeGender(String ageGender) { this.ageGender = ageGender; }
 
     public Integer getScheduleId() { return scheduleId; }
     public void setScheduleId(Integer scheduleId) { this.scheduleId = scheduleId; }

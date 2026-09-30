@@ -265,7 +265,7 @@
                 </a>
             </c:when>
             <c:when test="${u.role == 'DOCTOR'}">
-                <a href="${pageContext.request.contextPath}/doctor/dashboard" class="btn btn-primary" style="padding: 12px 24px;">
+                <a href="${pageContext.request.contextPath}/portal" class="btn btn-primary" style="padding: 12px 24px;">
                     Open Doctor Dashboard &rarr;
                 </a>
             </c:when>
