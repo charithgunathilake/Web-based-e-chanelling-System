@@ -93,7 +93,7 @@ public class AppointmentService {
                 a1.setPatientId(patient1Id);
                 a1.setScheduleId(scheduleId);
                 a1.setTokenNo(1);
-                a1.setStatus("Waiting");
+                a1.setStatus("BOOKED");
                 appointmentRepository.create(a1);
             }
 
@@ -104,7 +104,7 @@ public class AppointmentService {
                 a2.setPatientId(patient2Id);
                 a2.setScheduleId(scheduleId);
                 a2.setTokenNo(2);
-                a2.setStatus("In Consultation");
+                a2.setStatus("BOOKED");
                 appointmentRepository.create(a2);
             }
 
@@ -131,7 +131,7 @@ public class AppointmentService {
         dummy1.setDoctorId(doctorId);
         dummy1.setTokenNo(1);
         dummy1.setStartTime(java.time.LocalTime.of(9, 0));
-        dummy1.setStatus("Waiting");
+        dummy1.setStatus("BOOKED");
         fallback.add(dummy1);
 
         Appointment dummy2 = new Appointment();
@@ -145,7 +145,7 @@ public class AppointmentService {
         dummy2.setDoctorId(doctorId);
         dummy2.setTokenNo(2);
         dummy2.setStartTime(java.time.LocalTime.of(9, 30));
-        dummy2.setStatus("In Consultation");
+        dummy2.setStatus("BOOKED");
         fallback.add(dummy2);
 
         return fallback;

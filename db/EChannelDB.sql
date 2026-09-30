@@ -269,8 +269,8 @@ INSERT INTO doctor_schedule (doctor_id, room_id, schedule_date, start_time, end_
 (1, 2, CAST(GETDATE() AS DATE), '09:00', '12:00', 20);
 
 INSERT INTO appointments (patient_id, schedule_id, token_no, status) VALUES
-((SELECT patient_id FROM patients WHERE nic='198512345678'), 1, 1, 'Waiting'),
-((SELECT patient_id FROM patients WHERE nic='199256781234'), 1, 2, 'In Consultation');
+((SELECT patient_id FROM patients WHERE nic='198512345678'), 1, 1, 'BOOKED'),
+((SELECT patient_id FROM patients WHERE nic='199256781234'), 1, 2, 'BOOKED');
 
 PRINT 'EChannelDB schema, view, procedure, trigger and seed data created successfully.';
 GO
