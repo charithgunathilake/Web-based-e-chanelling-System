@@ -69,6 +69,7 @@
 
         .status-pill { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .status-BOOKED, .status-PENDING { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+        .status-PENDING_PHARMACY { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
         .status-ATTENDED, .status-FULFILLED, .status-ACTIVE, .status-PAID { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
         .status-CANCELLED, .status-INACTIVE { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
 
@@ -174,26 +175,7 @@
             <c:if test="${user.role == 'PATIENT'}">
                 <!-- 1. View Prescriptions -->
                 <div id="tab-prescriptions" class="tab-content">
-                    <div class="card">
-                        <div class="card-header"><h2 class="card-title">My e-Prescriptions</h2></div>
-                        <table class="table-custom">
-                            <thead><tr><th>ID</th><th>Medicines</th><th>Doctor</th><th>Issued At</th><th>Status</th></tr></thead>
-                            <tbody>
-                                <c:forEach var="p" items="${prescriptions}">
-                                    <tr>
-                                        <td>#${p.prescriptionId}</td>
-                                        <td><strong>${p.medicines}</strong></td>
-                                        <td>${p.doctorName != null ? p.doctorName : 'Dr. Perera'}</td>
-                                        <td>${p.issuedAt}</td>
-                                        <td><span class="status-pill status-${p.status}">${p.status}</span></td>
-                                    </tr>
-                                </c:forEach>
-                                <c:if test="${empty prescriptions}">
-                                    <tr><td colspan="5" style="text-align:center;color:#94a3b8;">No prescriptions found.</td></tr>
-                                </c:if>
-                            </tbody>
-                        </table>
-                    </div>
+                    <jsp:include page="/WEB-INF/views/patient/prescriptions.jsp" />
                 </div>
 
                 <!-- 2. Book Appointment -->

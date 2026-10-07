@@ -25,9 +25,19 @@ public class PatientController {
         return (User) session.getAttribute("loggedInUser");
     }
 
-    @GetMapping("/dashboard")
+    @GetMapping({"/dashboard", "/prescriptions"})
     public String dashboard() {
-        return "redirect:/portal";
+        return "redirect:/portal?tab=prescriptions";
+    }
+
+    /** Patient assigns a preferred pharmacy for fulfillment. */
+    @PostMapping({"/prescription/select-pharmacy", "/select-pharmacy"})
+    public String selectPharmacy(@RequestParam Integer prescriptionId,
+                                 @RequestParam String pharmacyName,
+                                 HttpSession session) throws DatabaseException {
+        prescriptionService.selectPharmacyForPrescription(prescriptionId, pharmacyName);
+        String encodedPharmacy = java.net.URLEncoder.encode(pharmacyName, java.nio.charset.StandardCharsets.UTF_8);
+        return "redirect:/portal?tab=prescriptions&pharmacySelected=1&pharmacyName=" + encodedPharmacy;
     }
 
     /** Use Case 2 step 1: Search Doctors & Book Appointment. */

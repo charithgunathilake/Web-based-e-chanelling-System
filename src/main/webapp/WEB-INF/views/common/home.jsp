@@ -260,7 +260,7 @@
     <div>
         <c:choose>
             <c:when test="${u.role == 'PATIENT'}">
-                <a href="${pageContext.request.contextPath}/patient/dashboard" class="btn btn-primary" style="padding: 12px 24px;">
+                <a href="${pageContext.request.contextPath}/portal?tab=prescriptions" class="btn btn-primary" style="padding: 12px 24px;">
                     Go to Patient Workspace &rarr;
                 </a>
             </c:when>

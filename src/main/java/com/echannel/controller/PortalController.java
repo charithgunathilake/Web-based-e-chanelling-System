@@ -74,10 +74,21 @@ public class PortalController {
             model.addAttribute("appointments", appointmentService.forPatient(patient.getPatientId()));
             model.addAttribute("prescriptions", prescriptionService.forPatient(patient.getPatientId()));
             model.addAttribute("records", healthRecordService.historyForPatient(patient.getPatientId()));
+        } else {
+            model.addAttribute("prescriptions", prescriptionService.forPatient(null));
         }
+        model.addAttribute("participatingPharmacies", prescriptionService.getParticipatingPharmacies());
         model.addAttribute("doctors", doctorService.searchBySpecialty(specialty));
         model.addAttribute("specialty", specialty);
         model.addAttribute("notifications", notificationService.forUser(user.getUserId()));
+    }
+
+    @PostMapping({"/portal/prescription/select-pharmacy", "/portal/select-pharmacy"})
+    public String selectPharmacy(@RequestParam Integer prescriptionId,
+                                 @RequestParam String pharmacyName) throws DatabaseException {
+        prescriptionService.selectPharmacyForPrescription(prescriptionId, pharmacyName);
+        String encodedPharmacy = java.net.URLEncoder.encode(pharmacyName, java.nio.charset.StandardCharsets.UTF_8);
+        return "redirect:/portal?tab=prescriptions&pharmacySelected=1&pharmacyName=" + encodedPharmacy;
     }
 
     private void populateDoctorData(User user, Model model) throws DatabaseException {

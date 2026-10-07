@@ -31,6 +31,9 @@ public class PrescriptionRepository implements com.echannel.repository.Repositor
         try {
             jdbcTemplate.execute("IF COL_LENGTH('dbo.prescriptions', 'pharmacy_name') IS NULL ALTER TABLE dbo.prescriptions ADD pharmacy_name VARCHAR(100) NULL");
         } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.execute("DECLARE @chkName VARCHAR(200); SELECT @chkName = name FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID('dbo.prescriptions') AND definition LIKE '%status%'; IF @chkName IS NOT NULL EXEC('ALTER TABLE dbo.prescriptions DROP CONSTRAINT ' + @chkName);");
+        } catch (Exception ignored) {}
     }
 
     private static final String BASE_SELECT =
@@ -154,7 +157,7 @@ public class PrescriptionRepository implements com.echannel.repository.Repositor
 
     public List<Prescription> findPending() throws DatabaseException {
         try {
-            return jdbcTemplate.query(BASE_SELECT + " WHERE pr.status = 'PENDING' ORDER BY pr.issued_at", rowMapper);
+            return jdbcTemplate.query(BASE_SELECT + " WHERE pr.status IN ('PENDING', 'PENDING_PHARMACY') ORDER BY pr.issued_at", rowMapper);
         } catch (DataAccessException e) {
             throw new DatabaseException("Could not read pending prescriptions: " + e.getMessage(), e);
         }
@@ -166,6 +169,15 @@ public class PrescriptionRepository implements com.echannel.repository.Repositor
                     pharmacyName, prescriptionId);
         } catch (DataAccessException e) {
             throw new DatabaseException("Could not update pharmacy: " + e.getMessage(), e);
+        }
+    }
+
+    public void updatePharmacyAndStatus(Integer prescriptionId, String pharmacyName, String status) throws DatabaseException {
+        try {
+            jdbcTemplate.update("UPDATE prescriptions SET pharmacy_name = ?, status = ? WHERE prescription_id = ?",
+                    pharmacyName, status, prescriptionId);
+        } catch (DataAccessException e) {
+            throw new DatabaseException("Could not update pharmacy and status: " + e.getMessage(), e);
         }
     }
 
