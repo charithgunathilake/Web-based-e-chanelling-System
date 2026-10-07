@@ -3,6 +3,7 @@ package com.echannel.controller;
 import com.echannel.exception.DatabaseException;
 import com.echannel.model.*;
 import com.echannel.service.*;
+import com.echannel.util.ClinicalValidator;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -117,19 +118,36 @@ public class DoctorController {
 
     @Autowired private com.echannel.repository.PatientRepository patientRepository;
 
-    @PostMapping("/prescription")
+    @PostMapping({"/prescription", "/prescription/create"})
     public String issuePrescription(@RequestParam Integer patientId,
                                      @RequestParam(required = false) Integer healthRecordId,
                                      @RequestParam(required = false) Integer appointmentId,
-                                     @RequestParam String medicines,
+                                     @RequestParam(required = false) String medicines,
+                                     @RequestParam(required = false) String prescribedMedicines,
                                      @RequestParam(required = false) String diagnosis,
+                                     @RequestParam(required = false) String clinicalDiagnosis,
                                      @RequestParam(required = false) String dosage,
+                                     @RequestParam(required = false) String dosageDuration,
                                      @RequestParam(required = false) String instructions,
+                                     @RequestParam(required = false) String specialInstructions,
                                      HttpSession session) {
         try {
             User user = (User) session.getAttribute("currentUser");
             if (user == null) user = (User) session.getAttribute("loggedInUser");
             if (user == null) return "redirect:/login";
+
+            String diag = (diagnosis != null && !diagnosis.isBlank()) ? diagnosis : clinicalDiagnosis;
+            String meds = (medicines != null && !medicines.isBlank()) ? medicines : prescribedMedicines;
+            String dos = (dosage != null && !dosage.isBlank()) ? dosage : dosageDuration;
+            String inst = (instructions != null && !instructions.isBlank()) ? instructions : specialInstructions;
+
+            // Server-Side Clinical Integrity & Gibberish Guard
+            ClinicalValidator.ValidationResult valResult = ClinicalValidator.validatePrescriptionPayload(diag, meds, dos, inst);
+            if (!valResult.isValid()) {
+                String redirectUrl = "/portal?tab=prescribe&error=invalid_clinical";
+                if (patientId != null) redirectUrl += "&patientId=" + patientId;
+                return "redirect:" + redirectUrl;
+            }
 
             Doctor doctor = doctorService.findByUserId(user.getUserId());
             Integer doctorId = doctor != null ? doctor.getDoctorId() : 1;
@@ -153,14 +171,14 @@ public class DoctorController {
                 }
             } catch (Exception ignored) {}
 
-            if (diagnosis != null && !diagnosis.isBlank()) {
+            if (diag != null && !diag.isBlank()) {
                 HealthRecord record = new HealthRecord();
                 record.setPatientId(validPatientId);
                 record.setDoctorId(doctorId);
                 if (appointmentId != null && appointmentId < 100) record.setAppointmentId(appointmentId);
-                record.setDiagnosis(diagnosis);
-                record.setTreatment(dosage != null && !dosage.isBlank() ? dosage : "As prescribed");
-                record.setNotes(instructions);
+                record.setDiagnosis(diag);
+                record.setTreatment(dos != null && !dos.isBlank() ? dos : "As prescribed");
+                record.setNotes(inst);
                 try {
                     healthRecordService.addRecord(record);
                     if (record.getRecordId() != null) {
@@ -169,9 +187,9 @@ public class DoctorController {
                 } catch (Exception ignored) {}
             }
 
-            StringBuilder medDetails = new StringBuilder(medicines);
-            if (dosage != null && !dosage.isBlank()) medDetails.append(" | Dosage: ").append(dosage);
-            if (instructions != null && !instructions.isBlank()) medDetails.append(" | Instructions: ").append(instructions);
+            StringBuilder medDetails = new StringBuilder(meds);
+            if (dos != null && !dos.isBlank()) medDetails.append(" | Dosage: ").append(dos);
+            if (inst != null && !inst.isBlank()) medDetails.append(" | Instructions: ").append(inst);
 
             Prescription prescription = new Prescription();
             prescription.setPatientId(validPatientId);
@@ -197,20 +215,34 @@ public class DoctorController {
     @PostMapping({"/prescription/edit", "/prescription/update"})
     public String editPrescription(@RequestParam Integer prescriptionId,
                                    @RequestParam(required = false) Integer patientId,
-                                   @RequestParam String medicines,
+                                   @RequestParam(required = false) String medicines,
+                                   @RequestParam(required = false) String prescribedMedicines,
                                    @RequestParam(required = false) String diagnosis,
+                                   @RequestParam(required = false) String clinicalDiagnosis,
                                    @RequestParam(required = false) String dosage,
+                                   @RequestParam(required = false) String dosageDuration,
                                    @RequestParam(required = false) String instructions,
+                                   @RequestParam(required = false) String specialInstructions,
                                    HttpSession session) {
         try {
-            StringBuilder medDetails = new StringBuilder(medicines);
-            if (dosage != null && !dosage.isBlank() && !medicines.contains("Dosage:")) {
-                medDetails.append(" | Dosage: ").append(dosage);
+            String diag = (diagnosis != null && !diagnosis.isBlank()) ? diagnosis : clinicalDiagnosis;
+            String meds = (medicines != null && !medicines.isBlank()) ? medicines : prescribedMedicines;
+            String dos = (dosage != null && !dosage.isBlank()) ? dosage : dosageDuration;
+            String inst = (instructions != null && !instructions.isBlank()) ? instructions : specialInstructions;
+
+            ClinicalValidator.ValidationResult valResult = ClinicalValidator.validatePrescriptionPayload(diag, meds, dos, inst);
+            if (!valResult.isValid()) {
+                return "redirect:/portal?tab=prescribe&error=invalid_clinical";
             }
-            if (instructions != null && !instructions.isBlank() && !medicines.contains("Instructions:")) {
-                medDetails.append(" | Instructions: ").append(instructions);
+
+            StringBuilder medDetails = new StringBuilder(meds != null ? meds : "");
+            if (dos != null && !dos.isBlank() && !medDetails.toString().contains("Dosage:")) {
+                medDetails.append(" | Dosage: ").append(dos);
             }
-            doctorService.updatePrescription(prescriptionId, medDetails.toString(), diagnosis, instructions);
+            if (inst != null && !inst.isBlank() && !medDetails.toString().contains("Instructions:")) {
+                medDetails.append(" | Instructions: ").append(inst);
+            }
+            doctorService.updatePrescription(prescriptionId, medDetails.toString(), diag, inst);
         } catch (Exception e) {
             e.printStackTrace();
         }

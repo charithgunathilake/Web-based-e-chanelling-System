@@ -562,6 +562,12 @@
         const cancelBtn = document.getElementById('prescribeCancelEditBtn');
         if (cancelBtn) cancelBtn.style.display = 'inline-flex';
         
+        // Clear previous validation error highlights
+        document.querySelectorAll('.clinical-input-error').forEach(el => el.classList.remove('clinical-input-error'));
+        document.querySelectorAll('.clinical-error-text').forEach(el => el.style.display = 'none');
+        const alertEl = document.getElementById('clinicalValidationAlert');
+        if (alertEl) alertEl.style.display = 'none';
+
         const selector = document.getElementById('patientSelector');
         if (selector) {
             let found = false;
@@ -603,6 +609,13 @@
         if (submitBtn) submitBtn.innerText = 'Save & Dispense';
         const cancelBtn = document.getElementById('prescribeCancelEditBtn');
         if (cancelBtn) cancelBtn.style.display = 'none';
+        
+        // Clear previous validation error highlights
+        document.querySelectorAll('.clinical-input-error').forEach(el => el.classList.remove('clinical-input-error'));
+        document.querySelectorAll('.clinical-error-text').forEach(el => el.style.display = 'none');
+        const alertEl = document.getElementById('clinicalValidationAlert');
+        if (alertEl) alertEl.style.display = 'none';
+
         const diagEl = document.getElementById('prescribeDiagnosis');
         if (diagEl) diagEl.value = '';
         const medEl = document.getElementById('prescribeMedicines');

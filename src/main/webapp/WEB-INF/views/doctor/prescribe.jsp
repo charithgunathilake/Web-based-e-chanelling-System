@@ -2,6 +2,21 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
+<style>
+    .clinical-input-error {
+        border-color: #ef4444 !important;
+        background: rgba(239, 68, 68, 0.06) !important;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+    }
+    .clinical-error-text {
+        color: #f87171;
+        font-size: 12px;
+        margin-top: 4px;
+        display: none;
+        font-weight: 500;
+    }
+</style>
+
 <c:if test="${param.prescribed == '1'}">
     <div style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.4); color:#34d399; padding:14px 18px; border-radius:10px; margin-bottom:20px; display:flex; align-items:center; gap:10px;">
         <span style="font-size:20px;">✅</span>
@@ -20,6 +35,18 @@
         <span style="font-weight:600;">Prescription successfully deleted.</span>
     </div>
 </c:if>
+<c:if test="${param.error == 'invalid_clinical'}">
+    <div id="serverClinicalAlert" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#f87171; padding:14px 18px; border-radius:10px; margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+        <span style="font-size:20px;">🚫</span>
+        <span><strong>Prescription rejected due to invalid clinical entries.</strong> Please correct the fields before issuing to the pharmacy.</span>
+    </div>
+</c:if>
+
+<!-- Dynamic Client-Side Clinical Validation Error Banner -->
+<div id="clinicalValidationAlert" style="display: none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#f87171; padding:14px 18px; border-radius:10px; margin-bottom:20px; align-items:center; gap:10px;">
+    <span style="font-size:20px;">⚠️</span>
+    <span id="clinicalValidationAlertMsg"><strong>Invalid clinical entry detected.</strong> Please correct the highlighted fields before issuing the prescription to the pharmacy.</span>
+</div>
 
 <div class="card" id="prescriptionCard">
     <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
@@ -36,7 +63,7 @@
         </a>
     </div>
     
-    <form method="post" action="${pageContext.request.contextPath}/doctor/prescription" id="prescriptionForm">
+    <form method="post" action="${pageContext.request.contextPath}/doctor/prescription" id="prescriptionForm" onsubmit="return validatePrescriptionPayload(event)">
         <input type="hidden" name="prescriptionId" id="editPrescriptionId" value="">
         <input type="hidden" name="appointmentId" id="prescriptionAppointmentId" value="">
 
@@ -46,7 +73,7 @@
                 <label style="color:#60a5fa; font-weight:700; display:flex; align-items:center; gap:6px;">
                     <span>👤</span> Select Patient from Active Queue (Synchronized Data)
                 </label>
-                <select class="form-control-dark" id="patientSelector" name="patientId" required onchange="onPrescribePatientChange(this.value)">
+                <select class="form-control-dark" id="patientSelector" name="patientId" required onchange="onPrescribePatientChange(this.value); clearFieldError('patientSelector');">
                     <option value="">-- Select Active Patient (${queuedPatients != null ? queuedPatients.size() : 0} in Queue) --</option>
                     <c:forEach var="p" items="${queuedPatients}">
                         <option value="${p.patientId}" 
@@ -63,6 +90,7 @@
                         </option>
                     </c:forEach>
                 </select>
+                <div id="error-patientSelector" class="clinical-error-text">Please select a patient from the active queue.</div>
             </div>
         </div>
 
@@ -94,19 +122,23 @@
         <div class="form-grid">
             <div class="form-group" style="grid-column: span 2;">
                 <label>Clinical Diagnosis <span style="color:#ef4444;">*</span></label>
-                <input class="form-control-dark" name="diagnosis" id="prescribeDiagnosis" placeholder="e.g., Acute Bronchitis / Hypertension / Diabetes Type 2" required>
+                <input class="form-control-dark" name="diagnosis" id="prescribeDiagnosis" placeholder="e.g., Acute Bronchitis / Hypertension / Diabetes Type 2" required oninput="clearFieldError('prescribeDiagnosis')">
+                <div id="error-prescribeDiagnosis" class="clinical-error-text">Please enter a valid clinical diagnosis (e.g., Acute Bronchitis, Hypertension). Gibberish and random characters are not permitted.</div>
             </div>
             <div class="form-group" style="grid-column: span 2;">
                 <label>Prescribed Medicines <span style="color:#ef4444;">*</span></label>
-                <textarea class="form-control-dark" name="medicines" id="prescribeMedicines" rows="3" placeholder="e.g., Amoxicillin 500mg, Paracetamol 500mg, Cetirizine 10mg" required></textarea>
+                <textarea class="form-control-dark" name="medicines" id="prescribeMedicines" rows="3" placeholder="e.g., Amoxicillin 500mg, Paracetamol 500mg, Cetirizine 10mg" required oninput="clearFieldError('prescribeMedicines')"></textarea>
+                <div id="error-prescribeMedicines" class="clinical-error-text">Please enter valid medication and dosage forms (e.g., Paracetamol 500mg, Amoxicillin, Syrup, Tablet).</div>
             </div>
             <div class="form-group">
                 <label>Dosage &amp; Duration</label>
-                <input class="form-control-dark" name="dosage" id="prescribeDosage" placeholder="e.g., 1 Tablet TDS after meals for 5 Days">
+                <input class="form-control-dark" name="dosage" id="prescribeDosage" placeholder="e.g., 1 Tablet TDS after meals for 5 Days" oninput="clearFieldError('prescribeDosage')">
+                <div id="error-prescribeDosage" class="clinical-error-text">Please specify a valid dosage format (e.g., 1 Tablet TDS after meals for 5 Days, 5ml BD).</div>
             </div>
             <div class="form-group">
                 <label>Special Instructions / Notes</label>
-                <input class="form-control-dark" name="instructions" id="prescribeInstructions" placeholder="e.g., Drink warm water, avoid cold drinks, review in 1 week">
+                <input class="form-control-dark" name="instructions" id="prescribeInstructions" placeholder="e.g., Drink warm water, avoid cold drinks, review in 1 week" oninput="clearFieldError('prescribeInstructions')">
+                <div id="error-prescribeInstructions" class="clinical-error-text">Special instructions contain invalid or gibberish text. Please enter clear clinical guidance or leave blank.</div>
             </div>
         </div>
 
@@ -192,3 +224,217 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Medical keywords and forms for client-side sanity check
+    const CLIENT_MEDICAL_TERMS = [
+        'acute', 'chronic', 'fever', 'cough', 'cold', 'flu', 'infection', 'headache', 'migraine',
+        'hypertension', 'diabetes', 'bronchitis', 'asthma', 'gastritis', 'gerd', 'allergy', 'allergic',
+        'dermatitis', 'sinusitis', 'pneumonia', 'tonsillitis', 'otitis', 'rhinitis', 'anemia', 'arthritis',
+        'ulcer', 'rash', 'covid', 'uti', 'urinary', 'cardiac', 'renal', 'sprain', 'fracture', 'wound',
+        'conjunctivitis', 'eczema', 'dyspepsia', 'colitis', 'gastric', 'diarrhea', 'vomiting', 'nausea',
+        'pain', 'chest', 'back', 'abdominal', 'throat', 'hyperlipidemia', 'insomnia', 'anxiety', 'depression',
+        'hypothyroidism', 'hyperthyroidism', 'gout', 'sciatica', 'cellulitis', 'measles', 'dengue', 'malaria',
+        'typhoid', 'vertigo', 'fatigue', 'acne', 'psoriasis', 'glaucoma', 'cataract', 'stroke', 'epilepsy',
+        'syndrome', 'disease', 'disorder', 'viral', 'bacterial', 'fungal', 'deficiency', 'inflammation',
+        'tablet', 'tablets', 'tab', 'tabs', 'capsule', 'capsules', 'cap', 'caps', 'syrup', 'syr',
+        'suspension', 'susp', 'injection', 'inj', 'ointment', 'cream', 'gel', 'drops', 'drop',
+        'inhaler', 'spray', 'lotion', 'solution', 'suppository', 'patch', 'mg', 'g', 'mcg', 'ml', 'iu',
+        'puff', 'puffs', 'tsp', 'tbsp', 'spoonful', 'od', 'bd', 'tds', 'qds', 'qid', 'tid', 'bid',
+        'prn', 'stat', 'daily', 'once', 'twice', 'thrice', 'morning', 'night', 'evening', 'afternoon',
+        'meals', 'food', 'water', 'hours', 'days', 'weeks', 'months', 'paracetamol', 'panadol', 'amoxicillin',
+        'augmentin', 'ibuprofen', 'brufen', 'omeprazole', 'pantoprazole', 'esomeprazole', 'rabeprazole',
+        'metformin', 'atorvastatin', 'rosuvastatin', 'losartan', 'candesartan', 'telmisartan', 'valsartan',
+        'azithromycin', 'ciprofloxacin', 'levofloxacin', 'cefixime', 'ceftriaxone', 'cefuroxime', 'amoxil',
+        'doxycycline', 'clarithromycin', 'cetirizine', 'fexofenadine', 'loratadine', 'chlorpheniramine',
+        'piriton', 'salbutamol', 'ventolin', 'budesonide', 'fluticasone', 'montelukast', 'prednisolone',
+        'dexamethasone', 'hydrocortisone', 'aspirin', 'clopidogrel', 'amlodipine', 'nifedipine', 'diltiazem',
+        'verapamil', 'atenolol', 'bisoprolol', 'metoprolol', 'carvedilol', 'nebivolol', 'enalapril',
+        'lisinopril', 'ramipril', 'perindopril', 'hydrochlorothiazide', 'furosemide', 'lasix', 'spironolactone',
+        'glimepiride', 'gliclazide', 'vildagliptin', 'sitagliptin', 'empagliflozin', 'dapagliflozin', 'insulin',
+        'insulatard', 'actrapid', 'novorapid', 'lantus', 'diclofenac', 'cataflam', 'voltaren', 'aceclofenac',
+        'mefenamic', 'ponstan', 'tramadol', 'codeine', 'morphine', 'gabapentin', 'pregabalin', 'domperidone',
+        'motilium', 'metoclopramide', 'plasil', 'ondansetron', 'gravol', 'hyoscine', 'buscopan', 'mebeverine',
+        'lactulose', 'bisacodyl', 'dulcolax', 'senna', 'loperamide', 'imodium', 'ors', 'zinc', 'calcium',
+        'vitamin', 'neurobion', 'folic', 'iron', 'ferrous', 'antacid', 'gaviscon', 'eno', 'chlorhexidine',
+        'betadine', 'mupirocin', 'fusidic', 'clotrimazole', 'fluconazole', 'acyclovir', 'miconazole', 'timolol',
+        'systane', 'otrivin', 'xylometazoline', 'strepsils', 'difflam', 'betamethasone', 'allopurinol',
+        'colchicine', 'thyroxine', 'diazepam', 'lorazepam', 'alprazolam', 'clonazepam', 'fluoxetine', 'sertraline',
+        'escitalopram', 'quetiapine', 'olanzapine', 'risperidone', 'valproate', 'carbamazepine', 'levetiracetam',
+        'baclofen', 'levodopa', 'donepezil', 'betahistine', 'cinnarizine', 'tranexamic', 'heparin', 'enoxaparin',
+        'warfarin', 'rivaroxaban', 'apixaban', 'digoxin', 'amiodarone', 'glyceryl', 'nitroglycerin', 'isosorbide',
+        'tamsulosin', 'sildenafil', 'tadalafil'
+    ];
+
+    const MASH_STRINGS = [
+        'asdf', 'sdfg', 'dfgh', 'fghj', 'ghjk', 'hjkl',
+        'qwer', 'wert', 'erty', 'rtyu', 'tyui', 'yuio', 'uiop',
+        'zxcv', 'xcvb', 'cvbn', 'vbnm',
+        'lkjh', 'kjhg', 'jhgf', 'hgfd', 'gfds', 'fdsa',
+        'poiu', 'oiuy', 'iuyt', 'uytr', 'ytre', 'trew', 'rewq',
+        'mnbv', 'nbvc', 'bvcx', 'vcxz',
+        '1234', '2345', '3456', '4567', '5678', '6789', '7890'
+    ];
+
+    function checkIsGibberish(text) {
+        if (!text) return true;
+        const clean = text.trim().toLowerCase();
+        if (clean.length < 2) return true;
+
+        // Must contain at least one letter
+        if (!/[a-z]/.test(clean)) return true;
+
+        // 4+ repeated letters
+        if (/([a-z])\1{3,}/i.test(clean)) return true;
+
+        // Keyboard mash patterns
+        for (let pattern of MASH_STRINGS) {
+            if (clean.includes(pattern)) return true;
+        }
+
+        // Long consonant clusters (5+ consonants)
+        const match = clean.match(/[bcdfghjklmnpqrstvwxz]{5,}/i);
+        if (match) {
+            let isAcronym = false;
+            for (let term of CLIENT_MEDICAL_TERMS) {
+                if (clean.includes(term)) { isAcronym = true; break; }
+            }
+            if (!isAcronym) return true;
+        }
+
+        // Words with 5+ alpha chars having 0 vowels
+        const words = clean.split(/[\s,;:.|/\-+()]+/);
+        for (let word of words) {
+            const alphaOnly = word.replace(/[^a-z]/g, '');
+            if (alphaOnly.length >= 5 && !/[aeiouy]/.test(alphaOnly)) {
+                if (!CLIENT_MEDICAL_TERMS.includes(alphaOnly)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    function setFieldError(fieldId, errorMsg) {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.classList.add('clinical-input-error');
+        }
+        const errEl = document.getElementById('error-' + fieldId);
+        if (errEl) {
+            if (errorMsg) errEl.innerText = errorMsg;
+            errEl.style.display = 'block';
+        }
+    }
+
+    function clearFieldError(fieldId) {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.classList.remove('clinical-input-error');
+        }
+        const errEl = document.getElementById('error-' + fieldId);
+        if (errEl) {
+            errEl.style.display = 'none';
+        }
+        // If all errors are cleared, hide top alert
+        const activeErrors = document.querySelectorAll('.clinical-input-error');
+        if (activeErrors.length === 0) {
+            const alertEl = document.getElementById('clinicalValidationAlert');
+            if (alertEl) alertEl.style.display = 'none';
+        }
+    }
+
+    function validatePrescriptionPayload(e) {
+        let isValid = true;
+        let firstInvalidEl = null;
+
+        // 1. Patient Selector
+        const patientSel = document.getElementById('patientSelector');
+        if (!patientSel || !patientSel.value) {
+            setFieldError('patientSelector', 'Please select an active patient from the queue.');
+            isValid = false;
+            if (!firstInvalidEl) firstInvalidEl = patientSel;
+        } else {
+            clearFieldError('patientSelector');
+        }
+
+        // 2. Clinical Diagnosis
+        const diagEl = document.getElementById('prescribeDiagnosis');
+        const diagVal = diagEl ? diagEl.value.trim() : '';
+        if (!diagVal || diagVal.length < 3 || checkIsGibberish(diagVal)) {
+            setFieldError('prescribeDiagnosis', 'Clinical diagnosis must be a valid medical condition (e.g., Acute Bronchitis, Hypertension). Gibberish is rejected.');
+            isValid = false;
+            if (!firstInvalidEl) firstInvalidEl = diagEl;
+        } else {
+            clearFieldError('prescribeDiagnosis');
+        }
+
+        // 3. Prescribed Medicines
+        const medEl = document.getElementById('prescribeMedicines');
+        const medVal = medEl ? medEl.value.trim() : '';
+        if (!medVal || medVal.length < 3 || checkIsGibberish(medVal)) {
+            setFieldError('prescribeMedicines', 'Prescribed medicines must include recognizable drug names or dosage forms (e.g., Paracetamol, Amoxicillin 500mg, Syrup, Tablet).');
+            isValid = false;
+            if (!firstInvalidEl) firstInvalidEl = medEl;
+        } else {
+            const lowerMed = medVal.toLowerCase();
+            let hasMedRef = false;
+            for (let term of CLIENT_MEDICAL_TERMS) {
+                if (lowerMed.includes(term)) {
+                    hasMedRef = true;
+                    break;
+                }
+            }
+            if (!hasMedRef && !/\d+\s*(mg|g|mcg|ml|tab|caps|puff|drop|iu)/i.test(lowerMed) && lowerMed.length < 4) {
+                setFieldError('prescribeMedicines', 'Medicines entry could not be clinically recognized. Please specify valid drug name and strength (e.g., Amoxicillin 500mg).');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = medEl;
+            } else {
+                clearFieldError('prescribeMedicines');
+            }
+        }
+
+        // 4. Dosage & Duration (Optional, but if filled must be valid)
+        const dosEl = document.getElementById('prescribeDosage');
+        const dosVal = dosEl ? dosEl.value.trim() : '';
+        if (dosVal && (dosVal.length < 2 || checkIsGibberish(dosVal))) {
+            setFieldError('prescribeDosage', 'Dosage & Duration must follow standard clinical frequency (e.g., 1 Tablet TDS after meals for 5 Days).');
+            isValid = false;
+            if (!firstInvalidEl) firstInvalidEl = dosEl;
+        } else if (dosEl) {
+            clearFieldError('prescribeDosage');
+        }
+
+        // 5. Special Instructions (Optional, but if filled must be valid)
+        const instEl = document.getElementById('prescribeInstructions');
+        const instVal = instEl ? instEl.value.trim() : '';
+        if (instVal && (instVal.length < 3 || checkIsGibberish(instVal))) {
+            setFieldError('prescribeInstructions', 'Special instructions contain invalid or gibberish text. Please enter clear guidance or leave empty.');
+            isValid = false;
+            if (!firstInvalidEl) firstInvalidEl = instEl;
+        } else if (instEl) {
+            clearFieldError('prescribeInstructions');
+        }
+
+        if (!isValid) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const alertEl = document.getElementById('clinicalValidationAlert');
+            if (alertEl) {
+                alertEl.style.display = 'flex';
+                alertEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (firstInvalidEl) {
+                firstInvalidEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalidEl.focus();
+            }
+            return false;
+        }
+
+        const alertEl = document.getElementById('clinicalValidationAlert');
+        if (alertEl) alertEl.style.display = 'none';
+        return true;
+    }
+</script>
