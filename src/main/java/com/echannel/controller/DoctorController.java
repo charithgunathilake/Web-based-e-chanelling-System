@@ -36,6 +36,16 @@ public class DoctorController {
         return "redirect:/portal";
     }
 
+    @GetMapping("/queue")
+    public String queue() {
+        return "redirect:/portal?tab=queue";
+    }
+
+    @GetMapping("/prescribe")
+    public String prescribe(@RequestParam(value = "patientId", required = false) Integer patientId) {
+        return patientId != null ? "redirect:/portal?tab=prescribe&patientId=" + patientId : "redirect:/portal?tab=prescribe";
+    }
+
     /** Use Case 1: Create & Manage Doctor Schedule ("Manage Availability"). */
     @GetMapping("/schedule")
     public String schedulePage(HttpSession session, Model model) throws DatabaseException {

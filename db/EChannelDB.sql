@@ -253,24 +253,31 @@ INSERT INTO users (username, password, full_name, email, phone, role) VALUES
 ('reception1','$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2','Reception Staff 1',    'reception@echannel.lk','0770000002','RECEPTION'),
 ('pharmacy1','$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2','Pharmacist 1',          'pharmacy@echannel.lk', '0770000003','PHARMACIST'),
 ('opsmgr1', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Operations Manager 1', 'ops@echannel.lk',      '0770000004','OPERATIONS_MANAGER'),
-('patient1','$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Kasun Silva',           'kasun@example.com',    '0770000005','PATIENT'),
-('saman',   '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Saman Kumara',          'saman@example.com',    '0771234567','PATIENT'),
-('anula',   '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Anula Rathnayake',      'anula@example.com',    '0777654321','PATIENT');
+('dhamishka', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Dhamishka Charith',     'dhamishka@example.com',    '0771122334','PATIENT'),
+('chathul',   '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Chathul',               'chathul@example.com',      '0772233445','PATIENT'),
+('kasunp',    '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Kasun Perera',          'kasun.perera@example.com', '0773344556','PATIENT'),
+('dhamishkag','$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Dhamishka Gunathilaka', 'gunathilaka@example.com', '0774455667','PATIENT'),
+('avishka',   '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5vAyrJ0j1XwqK8bpCU8WM5XyUFqk2', 'Avishka Chasith',       'avishka@example.com',      '0775566778','PATIENT');
 
 INSERT INTO doctors (user_id, specialty, branch_id) VALUES
 ((SELECT user_id FROM users WHERE username='drperera'), 'Cardiology', 1);
 
 INSERT INTO patients (user_id, nic, dob, address) VALUES
-((SELECT user_id FROM users WHERE username='patient1'), '200012345678', '2000-05-12', 'No 5, Colombo'),
-((SELECT user_id FROM users WHERE username='saman'),    '198512345678', '1985-04-12', 'No 12, Kandy Road, Malabe'),
-((SELECT user_id FROM users WHERE username='anula'),    '199256781234', '1992-09-25', 'No 45, Main Street, Colombo');
+((SELECT user_id FROM users WHERE username='dhamishka'),  '199812345678', '1998-05-15', 'No 12, Temple Road, Colombo'),
+((SELECT user_id FROM users WHERE username='chathul'),    '199923456789', '1999-08-20', 'No 45, Kandy Road, Malabe'),
+((SELECT user_id FROM users WHERE username='kasunp'),     '199434567890', '1994-11-10', 'No 78, Galle Road, Colombo'),
+((SELECT user_id FROM users WHERE username='dhamishkag'), '199645678901', '1996-03-22', 'No 90, High Level Road, Nugegoda'),
+((SELECT user_id FROM users WHERE username='avishka'),    '200156789012', '2001-07-08', 'No 34, Station Road, Kelaniya');
 
 INSERT INTO doctor_schedule (doctor_id, room_id, schedule_date, start_time, end_time, max_patients) VALUES
 (1, 2, CAST(GETDATE() AS DATE), '09:00', '12:00', 20);
 
 INSERT INTO appointments (patient_id, schedule_id, token_no, status) VALUES
-((SELECT patient_id FROM patients WHERE nic='198512345678'), 1, 1, 'BOOKED'),
-((SELECT patient_id FROM patients WHERE nic='199256781234'), 1, 2, 'BOOKED');
+((SELECT patient_id FROM patients WHERE nic='199812345678'), 1, 1, 'BOOKED'),
+((SELECT patient_id FROM patients WHERE nic='199923456789'), 1, 2, 'BOOKED'),
+((SELECT patient_id FROM patients WHERE nic='199434567890'), 1, 3, 'BOOKED'),
+((SELECT patient_id FROM patients WHERE nic='199645678901'), 1, 4, 'BOOKED'),
+((SELECT patient_id FROM patients WHERE nic='200156789012'), 1, 5, 'BOOKED');
 
 PRINT 'EChannelDB schema, view, procedure, trigger and seed data created successfully.';
 GO
@@ -280,7 +287,7 @@ UPDATE Users SET password = 'Doctor' WHERE user_id = 2;
 UPDATE Users SET password = 'Reception' WHERE user_id = 3;
 UPDATE Users SET password = 'pharmacy' WHERE user_id = 4;
 UPDATE Users SET password = 'op123' WHERE user_id = 5;
-UPDATE Users SET password = 'patient' WHERE user_id IN (6, 7, 8);
+UPDATE Users SET password = 'patient' WHERE user_id IN (6, 7, 8, 9, 10);
 
 UPDATE Users SET username = 'admin' WHERE user_id = 1;
 UPDATE Users SET username = 'Doctor' WHERE user_id = 2;
