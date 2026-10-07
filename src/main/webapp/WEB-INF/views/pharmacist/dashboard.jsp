@@ -17,16 +17,18 @@
         <c:otherwise>
             <div class="table-wrap">
             <table>
-                <thead><tr><th>Patient</th><th>Doctor</th><th>Medicines</th><th>Issued</th><th></th></tr></thead>
+                <thead><tr><th>Patient</th><th>Doctor</th><th>Medicines</th><th>Selected Pharmacy</th><th>Issued</th><th></th></tr></thead>
                 <tbody>
                 <c:forEach var="p" items="${pending}">
                     <tr>
                         <td>${p.patientName}</td>
                         <td>${p.doctorName}</td>
                         <td style="white-space:pre-wrap;max-width:320px;">${p.medicines}</td>
+                        <td><span class="badge badge-blue">${p.pharmacyName != null ? p.pharmacyName : 'Not Assigned'}</span></td>
                         <td><fmt:formatDate value="${p.issuedAt}" pattern="dd MMM yyyy HH:mm"/></td>
                         <td>
                             <form method="post" action="${pageContext.request.contextPath}/pharmacist/dispense/${p.prescriptionId}">
+                                <input type="hidden" name="pharmacyName" value="${p.pharmacyName}">
                                 <button class="btn btn-success btn-sm" type="submit">Confirm Fulfilment</button>
                             </form>
                         </td>

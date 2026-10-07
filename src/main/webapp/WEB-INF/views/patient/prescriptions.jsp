@@ -80,8 +80,8 @@
                         </td>
                         <td>
                             <c:choose>
-                                <c:when test="${p.status == 'FULFILLED'}">
-                                    <span class="status-pill status-FULFILLED">Dispensed</span>
+                                <c:when test="${p.status == 'DISPENSED' || p.status == 'FULFILLED' || p.status == 'COMPLETED'}">
+                                    <span class="status-pill status-DISPENSED">Dispensed</span>
                                 </c:when>
                                 <c:when test="${p.status == 'PENDING_PHARMACY'}">
                                     <span class="status-pill status-PENDING_PHARMACY">Sent to Pharmacy</span>
@@ -93,10 +93,10 @@
                         </td>
                         <td>
                             <c:choose>
-                                <c:when test="${p.status == 'FULFILLED'}">
-                                    <div style="display: flex; align-items: center; gap: 8px; color: #34d399; font-size: 13px;">
+                                <c:when test="${p.status == 'DISPENSED' || p.status == 'FULFILLED' || p.status == 'COMPLETED'}">
+                                    <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 8px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 600;">
                                         <span>✅</span>
-                                        <span>Medication dispensed by <strong>${p.pharmacyName != null ? p.pharmacyName : 'Participating Pharmacy'}</strong>.</span>
+                                        <span>Medication dispensed by <strong>${p.pharmacyName != null && !empty p.pharmacyName ? p.pharmacyName : 'Selected Pharmacy'}</strong></span>
                                     </div>
                                 </c:when>
                                 <c:otherwise>

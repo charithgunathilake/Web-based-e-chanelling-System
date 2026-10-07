@@ -70,7 +70,7 @@
         .status-pill { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .status-BOOKED, .status-PENDING { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
         .status-PENDING_PHARMACY { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
-        .status-ATTENDED, .status-FULFILLED, .status-ACTIVE, .status-PAID { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .status-ATTENDED, .status-FULFILLED, .status-DISPENSED, .status-COMPLETED, .status-ACTIVE, .status-PAID { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
         .status-CANCELLED, .status-INACTIVE { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
 
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px; }
@@ -284,89 +284,7 @@
             <!-- ==================== PHARMACIST SUB-UIs ==================== -->
             <c:if test="${user.role == 'PHARMACIST'}">
                 <div id="tab-pharmacy" class="tab-content">
-                    <c:if test="${param.dispensed == '1'}">
-                        <div style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.4); color:#34d399; padding:12px 16px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:18px;">✅</span>
-                            <span>Prescription fulfilled successfully and medication dispensed at the selected pharmacy.</span>
-                        </div>
-                    </c:if>
-                    <c:if test="${param.updated == '1'}">
-                        <div style="background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.4); color:#60a5fa; padding:12px 16px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:18px;">ℹ️</span>
-                            <span>Participating pharmacy assignment updated successfully.</span>
-                        </div>
-                    </c:if>
-
-                    <div class="card">
-                        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                            <div>
-                                <h2 class="card-title">Incoming Doctor e-Prescriptions</h2>
-                                <p style="font-size:13px; color:#94a3b8; margin:4px 0 0 0;">Review incoming prescriptions, assign participating pharmacies, and dispense medications.</p>
-                            </div>
-                            <span class="status-pill status-BOOKED" style="font-size:12px;">6 Participating Pharmacies</span>
-                        </div>
-
-                        <div style="overflow-x:auto;">
-                            <table class="table-custom">
-                                <thead>
-                                    <tr>
-                                        <th>Rx ID</th>
-                                        <th>Patient Name</th>
-                                        <th>Doctor</th>
-                                        <th>Diagnosis / Clinical Notes</th>
-                                        <th>Prescribed Medicines</th>
-                                        <th>Status</th>
-                                        <th style="min-width:300px;">Participating Pharmacy &amp; Fulfilment</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <c:forEach var="p" items="${pending}">
-                                        <tr>
-                                            <td><strong style="color:#60a5fa;">#${p.prescriptionId}</strong></td>
-                                            <td>
-                                                <div style="font-weight:600; color:#f1f5f9;">${p.patientName}</div>
-                                                <div style="font-size:11px; color:#94a3b8;">Patient ID: #P-${p.patientId}</div>
-                                            </td>
-                                            <td>
-                                                <div style="color:#e2e8f0;">${p.doctorName}</div>
-                                                <div style="font-size:11px; color:#94a3b8;">Attending Physician</div>
-                                            </td>
-                                            <td>
-                                                <span style="color:#cbd5e1; font-size:13px;">${p.diagnosis != null ? p.diagnosis : 'Standard Clinical Protocol'}</span>
-                                            </td>
-                                            <td>
-                                                <span style="color:#fbbf24; font-weight:500;">${p.medicines}</span>
-                                            </td>
-                                            <td>
-                                                <span class="status-pill status-${p.status}">${p.status}</span>
-                                            </td>
-                                            <td>
-                                                <form method="post" action="${pageContext.request.contextPath}/pharmacist/dispense/${p.prescriptionId}" style="display:flex; align-items:center; gap:8px;">
-                                                    <select name="pharmacyName" class="form-control-dark" style="min-width: 175px; padding: 6px 10px; font-size: 13px;" required>
-                                                        <option value="">-- Select Pharmacy --</option>
-                                                        <c:forEach var="pharmacy" items="${participatingPharmacies}">
-                                                            <option value="${pharmacy}" <c:if test="${p.pharmacyName == pharmacy}">selected</c:if>>${pharmacy}</option>
-                                                        </c:forEach>
-                                                    </select>
-                                                    <button type="submit" class="btn-success-sm" style="white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">
-                                                        <span>💊</span> Dispense
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    </c:forEach>
-                                    <c:if test="${empty pending}">
-                                        <tr>
-                                            <td colspan="7" style="text-align:center; padding:32px 16px; color:#94a3b8;">
-                                                <div style="font-size:24px; margin-bottom:8px;">💊</div>
-                                                <div>No pending e-prescriptions waiting in the fulfillment queue.</div>
-                                            </td>
-                                        </tr>
-                                    </c:if>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <jsp:include page="/WEB-INF/views/pharmacist/pharmacy.jsp" />
                 </div>
             </c:if>
 

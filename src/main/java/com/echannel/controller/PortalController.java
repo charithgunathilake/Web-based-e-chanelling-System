@@ -91,6 +91,17 @@ public class PortalController {
         return "redirect:/portal?tab=prescriptions&pharmacySelected=1&pharmacyName=" + encodedPharmacy;
     }
 
+    @PostMapping({"/portal/dispense/{prescriptionId}", "/portal/dispense", "/portal/pharmacy/dispense"})
+    public String dispensePrescription(@PathVariable(required = false) Integer prescriptionId,
+                                       @RequestParam(required = false) Integer id,
+                                       @RequestParam(required = false) String pharmacyName) throws DatabaseException {
+        Integer rxId = prescriptionId != null ? prescriptionId : id;
+        if (rxId != null) {
+            prescriptionService.dispense(rxId, pharmacyName);
+        }
+        return "redirect:/portal?tab=pharmacy&dispensed=1";
+    }
+
     private void populateDoctorData(User user, Model model) throws DatabaseException {
         Doctor doctor = doctorService.findByUserId(user.getUserId());
         model.addAttribute("doctor", doctor);

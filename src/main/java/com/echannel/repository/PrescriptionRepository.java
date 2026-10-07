@@ -182,8 +182,8 @@ public class PrescriptionRepository implements com.echannel.repository.Repositor
     }
 
     /**
-     * Dispenses ("fulfils") a prescription by CALLING the sp_fulfil_prescription
-     * stored procedure in SQL Server, and saves the dispensing pharmacy name.
+     * Dispenses a prescription in SQL Server, sets status to DISPENSED,
+     * updates fulfilled_at timestamp, and preserves/saves the dispensing pharmacy name.
      */
     public void fulfil(Integer prescriptionId) throws DatabaseException {
         fulfil(prescriptionId, null);
@@ -192,18 +192,14 @@ public class PrescriptionRepository implements com.echannel.repository.Repositor
     public void fulfil(Integer prescriptionId, String pharmacyName) throws DatabaseException {
         try {
             if (pharmacyName != null && !pharmacyName.isBlank()) {
-                jdbcTemplate.update("UPDATE prescriptions SET pharmacy_name = ? WHERE prescription_id = ?",
+                jdbcTemplate.update("UPDATE prescriptions SET status = 'DISPENSED', fulfilled_at = GETDATE(), pharmacy_name = ? WHERE prescription_id = ?",
                         pharmacyName, prescriptionId);
+            } else {
+                jdbcTemplate.update("UPDATE prescriptions SET status = 'DISPENSED', fulfilled_at = GETDATE() WHERE prescription_id = ?",
+                        prescriptionId);
             }
-            SimpleJdbcCall call = new SimpleJdbcCall(dataSource).withProcedureName("sp_fulfil_prescription");
-            call.execute(java.util.Map.of("PrescriptionId", prescriptionId));
-        } catch (Exception e) {
-            try {
-                jdbcTemplate.update("UPDATE prescriptions SET status = 'FULFILLED', fulfilled_at = GETDATE(), pharmacy_name = COALESCE(?, pharmacy_name) WHERE prescription_id = ?",
-                        pharmacyName, prescriptionId);
-            } catch (DataAccessException ex) {
-                throw new DatabaseException("Could not dispense prescription: " + ex.getMessage(), ex);
-            }
+        } catch (DataAccessException ex) {
+            throw new DatabaseException("Could not dispense prescription: " + ex.getMessage(), ex);
         }
     }
 }

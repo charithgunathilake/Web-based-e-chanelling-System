@@ -189,7 +189,17 @@
                                 <span style="color:#fbbf24; font-size:13px;">${pr.medicines}</span>
                             </td>
                             <td>
-                                <span class="status-pill status-${pr.status}">${pr.status}</span>
+                                <c:choose>
+                                    <c:when test="${pr.status == 'DISPENSED' || pr.status == 'FULFILLED' || pr.status == 'COMPLETED'}">
+                                        <span class="status-pill status-DISPENSED">Dispensed</span>
+                                    </c:when>
+                                    <c:when test="${pr.status == 'PENDING_PHARMACY'}">
+                                        <span class="status-pill status-PENDING_PHARMACY">Sent to Pharmacy</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="status-pill status-PENDING">${pr.status}</span>
+                                    </c:otherwise>
+                                </c:choose>
                             </td>
                             <td style="text-align:center;">
                                 <div style="display:inline-flex; gap:8px; align-items:center; justify-content:center;">

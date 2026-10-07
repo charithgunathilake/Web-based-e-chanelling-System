@@ -8,21 +8,25 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@RequestMapping("/pharmacist")
+@RequestMapping({"/pharmacist", "/pharmacy"})
 public class PharmacistController {
 
     @Autowired private PrescriptionService prescriptionService;
 
     /** Use Case 5: View e-Prescription queue + Confirm Order Fulfilment (dispense). */
-    @GetMapping({"/dashboard", "/queue"})
+    @GetMapping({"/dashboard", "/queue", ""})
     public String dashboard() {
         return "redirect:/portal?tab=pharmacy";
     }
 
-    @PostMapping("/dispense/{prescriptionId}")
-    public String dispense(@PathVariable Integer prescriptionId,
+    @PostMapping({"/dispense/{prescriptionId}", "/dispense"})
+    public String dispense(@PathVariable(required = false) Integer prescriptionId,
+                           @RequestParam(required = false) Integer id,
                            @RequestParam(required = false) String pharmacyName) throws DatabaseException {
-        prescriptionService.dispense(prescriptionId, pharmacyName);
+        Integer rxId = prescriptionId != null ? prescriptionId : id;
+        if (rxId != null) {
+            prescriptionService.dispense(rxId, pharmacyName);
+        }
         return "redirect:/portal?tab=pharmacy&dispensed=1";
     }
 

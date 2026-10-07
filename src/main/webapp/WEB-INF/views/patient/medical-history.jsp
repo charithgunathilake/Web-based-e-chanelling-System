@@ -38,7 +38,8 @@
                     <div style="border-bottom:1px solid var(--border);padding:12px 0;">
                         <strong>Dr. ${p.doctorName}</strong>
                         <c:choose>
-                            <c:when test="${p.status == 'FULFILLED'}"><span class="badge badge-green">Dispensed</span></c:when>
+                            <c:when test="${p.status == 'DISPENSED' || p.status == 'FULFILLED' || p.status == 'COMPLETED'}"><span class="badge badge-green">Dispensed</span></c:when>
+                            <c:when test="${p.status == 'PENDING_PHARMACY'}"><span class="badge badge-blue">Sent to Pharmacy</span></c:when>
                             <c:otherwise><span class="badge badge-amber">Pending</span></c:otherwise>
                         </c:choose>
                         <div style="font-size:13.5px;margin-top:6px;white-space:pre-wrap;">${p.medicines}</div>
